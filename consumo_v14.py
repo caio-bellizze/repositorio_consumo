@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
+import openpyxl
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
