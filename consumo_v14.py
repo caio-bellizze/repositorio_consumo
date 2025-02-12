@@ -63,14 +63,23 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # 🔹 Cálculo do CAGR (Taxa de Crescimento Anual Composta)
-    df_mensal["Ano_Mes_num"] = np.arange(len(df_mensal))  # Converter meses para valores numéricos (e.g., 0, 1, 2, ...)
-    valor_inicial = df_mensal["Consumo Médio Total"].iloc[0]  # Consumo no primeiro mês
-    valor_final = df_mensal["Consumo Médio Total"].iloc[-1]  # Consumo no último mês
-    num_periodos = len(df_mensal) / 12  # Número de anos (assumindo que os dados sejam mensais)
-    
-    cagr = (valor_final / valor_inicial) ** (1 / num_periodos) - 1
-    cagr_percent = cagr * 100  # Converter para porcentagem
+    # 🔹 Função para calcular o CAGR móvel (em uma janela de n meses)
+    def calcular_cagr_movel(consumo, janela=6):
+        cagr_movel = []
+        for i in range(len(consumo) - janela + 1):
+            valor_inicial = consumo.iloc[i]
+            valor_final = consumo.iloc[i + janela - 1]
+            num_periodos = janela / 12  # Convertendo meses para anos
+            cagr = (valor_final / valor_inicial) ** (1 / num_periodos) - 1
+            cagr_movel.append(cagr)
+        return cagr_movel
+
+    # 🔹 Cálculo do CAGR Móvel para a janela de 6 meses (ajuste conforme necessário)
+    cagr_movel = calcular_cagr_movel(df_mensal["Consumo Médio Total"], janela=6)
+
+    # 🔹 Prever os valores usando o CAGR Móvel para cada janela
+    cagr_percent_movel = [c * 100 for c in cagr_movel]  # Converter para porcentagem
+    y_pred_cagr_movel = [df_mensal["Consumo Médio Total"].iloc[i] * (1 + cagr_movel[i]) ** (j / 12) for i, j in enumerate(range(len(cagr_movel)))]
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -79,9 +88,8 @@ if st.button("Calcular") and empresa_filtro:
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
-    # 🔹 Adicionar a linha de tendência (CAGR)
-    y_pred_cagr = valor_inicial * (1 + cagr) ** (df_mensal["Ano_Mes_num"] / 12)  # Prever valores com base no CAGR
-    ax.plot(df_mensal["Ano_Mes"], y_pred_cagr, color="orange", label=f"Linha de Tendência (CAGR: {cagr_percent:.2f}%)", linewidth=2)
+    # 🔹 Adicionar a linha de tendência do CAGR Móvel
+    ax.plot(df_mensal["Ano_Mes"].iloc[5:], y_pred_cagr_movel, color="orange", label=f"Linha de Tendência Móvel (CAGR)", linewidth=2)
 
     # 🔹 Mostrar a flexibilidade estimada e outros elementos
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
@@ -93,4 +101,3 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
-
