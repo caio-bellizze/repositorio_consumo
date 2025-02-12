@@ -28,8 +28,8 @@ num_mad = st.slider("Escolha o número de desvios padrões para determinar os li
 
 # 🔹 Adicionar seleção de intervalo de datas
 df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
-intervalo_datas = st.date_input("Selecione o intervalo de datas", value=(pd.to_datetime("2022-01-01"), pd.to_datetime("2024-12-31")), format="YYYY-MM-DD")
-data_inicio, data_fim = intervalo_datas
+data_inicio = st.date_input("Data Inicial", value=pd.to_datetime("2022-01-01"))
+data_fim = st.date_input("Data Final", value=pd.to_datetime("2024-12-31"))
 
 # 🔹 Criar botão para gerar o gráfico
 if st.button("Calcular") and empresa_filtro:
@@ -63,16 +63,14 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # 🔹 Cálculo do CAGR
-    if not df_mensal.empty:
-        consumo_inicial = df_mensal["Consumo Médio Total"].iloc[0]
-        consumo_final = df_mensal["Consumo Médio Total"].iloc[-1]
-        anos = (df_mensal["Ano_Mes"].iloc[-1] - df_mensal["Ano_Mes"].iloc[0]).days / 365.25
-        cagr = ((consumo_final / consumo_inicial) ** (1 / anos) - 1) * 100 if anos > 0 else 0
-        st.write(f"📈 Taxa de Crescimento Anual Composta (CAGR): {cagr:.2f}%")
-
-    # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%Y.%m")
+    # 🔹 Cálculo do CAGR (Taxa de Crescimento Anual Composta)
+    df_mensal["Ano_Mes_num"] = np.arange(len(df_mensal))  # Converter meses para valores numéricos (e.g., 0, 1, 2, ...)
+    valor_inicial = df_mensal["Consumo Médio Total"].iloc[0]  # Consumo no primeiro mês
+    valor_final = df_mensal["Consumo Médio Total"].iloc[-1]  # Consumo no último mês
+    num_periodos = len(df_mensal) / 12  # Número de anos (assumindo que os dados sejam mensais)
+    
+    cagr = (valor_final / valor_inicial) ** (1 / num_periodos) - 1
+    cagr_percent = cagr * 100  # Converter para porcentagem
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -80,9 +78,13 @@ if st.button("Calcular") and empresa_filtro:
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
-    ax.axhline(y=cagr, color="orange", linestyle="--", label=f"CAGR")  
     
-    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="center right")
+    # 🔹 Adicionar a linha de tendência (CAGR)
+    y_pred_cagr = valor_inicial * (1 + cagr) ** (df_mensal["Ano_Mes_num"] / 12)  # Prever valores com base no CAGR
+    ax.plot(df_mensal["Ano_Mes"], y_pred_cagr, color="orange", label=f"Linha de Tendência (CAGR: {cagr_percent:.2f}%)", linewidth=2)
+
+    # 🔹 Mostrar a flexibilidade estimada e outros elementos
+    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
     ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
@@ -91,3 +93,4 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
+
