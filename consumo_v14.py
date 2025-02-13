@@ -31,6 +31,10 @@ df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
 data_inicio = st.date_input("Data Inicial", value=pd.to_datetime("2022-01-01"))
 data_fim = st.date_input("Data Final", value=pd.to_datetime("2024-12-31"))
 
+# 🔹 Adicionar checkboxes para selecionar linhas de crescimento
+mostrar_crescimento_exponencial = st.checkbox("Mostrar Crescimento Exponencial")
+mostrar_cagr_acumulado = st.checkbox("Mostrar CAGR Acumulado")
+
 # 🔹 Criar botão para gerar o gráfico
 if st.button("Calcular") and empresa_filtro:
     df_empresa = df[df["NOME_EMPRESARIAL"] == empresa_filtro].copy()
@@ -78,9 +82,12 @@ if st.button("Calcular") and empresa_filtro:
         y_pred_cagr_acumulado = consumo.iloc[0] * (1 + cagr_acumulado) ** (np.arange(len(consumo)) / 12)
         return y_pred_cagr_acumulado
 
-    # 🔹 Calcular as linhas de crescimento exponencial e CAGR acumulado
-    y_pred_exponencial = calcular_crescimento_exponencial(df_mensal["Consumo Médio Total"])
-    y_pred_cagr_acumulado = calcular_cagr_acumulado(df_mensal["Consumo Médio Total"])
+    # 🔹 Calcular as linhas de crescimento exponencial e CAGR acumulado se selecionadas
+    if mostrar_crescimento_exponencial:
+        y_pred_exponencial = calcular_crescimento_exponencial(df_mensal["Consumo Médio Total"])
+    
+    if mostrar_cagr_acumulado:
+        y_pred_cagr_acumulado = calcular_cagr_acumulado(df_mensal["Consumo Médio Total"])
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -89,9 +96,12 @@ if st.button("Calcular") and empresa_filtro:
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
 
-    # 🔹 Adicionar as linhas de crescimento exponencial e CAGR acumulado
-    ax.plot(df_mensal["Ano_Mes"], y_pred_exponencial, color="orange", label="Crescimento Exponencial", linewidth=2)
-    ax.plot(df_mensal["Ano_Mes"], y_pred_cagr_acumulado, color="purple", label="CAGR Acumulado", linewidth=2)
+    # 🔹 Adicionar as linhas de crescimento exponencial e CAGR acumulado se selecionadas
+    if mostrar_crescimento_exponencial:
+        ax.plot(df_mensal["Ano_Mes"], y_pred_exponencial, color="orange", label="Crescimento Exponencial", linewidth=2)
+    
+    if mostrar_cagr_acumulado:
+        ax.plot(df_mensal["Ano_Mes"], y_pred_cagr_acumulado, color="purple", label="CAGR Acumulado", linewidth=2)
 
     # 🔹 Mostrar a flexibilidade estimada e outros elementos
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
