@@ -86,7 +86,7 @@ if st.button("Calcular") and empresa_filtro:
     
     # Adicionando os anos abaixo do eixo X
     for i, ano in enumerate(["2022" , "2023", "2024"]):
-        ax.text(i * 12 + 5.5, -2, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
+        ax.text(i * 12 + 5.5, -3.5, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
 
     ax.grid(True, linestyle="--", alpha=0.5)
 
