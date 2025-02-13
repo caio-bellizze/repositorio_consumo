@@ -87,7 +87,6 @@ if st.button("Calcular") and empresa_filtro:
     ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
     plt.xticks(rotation=45)
     
-    ax2.legend()
     ax2.set_xlabel("Data")
     ax2.set_ylabel("Consumo Médio Total")
     ax2.set_title(f"Consumo Histórico e Previsão - {empresa_filtro}")
