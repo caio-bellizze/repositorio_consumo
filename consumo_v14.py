@@ -42,9 +42,9 @@ if st.button("Calcular") and empresa_filtro:
     df_empresa = df_empresa[(df_empresa["Data"] >= pd.to_datetime(data_inicio)) & 
                              (df_empresa["Data"] <= pd.to_datetime(data_fim))]
     
-    df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M")
+    df_empresa["Ano_Mes"] = df_empresa["Data"].dt.strftime('%Y-%m')
     df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.to_timestamp(how="start")
+    df_mensal["Ano_Mes"] = pd.to_datetime(df_mensal["Ano_Mes"])
 
     # 🔹 Cálculo do Modified Z-score
     mediana_consumo = np.median(df_mensal["Consumo Médio Total"])
@@ -78,7 +78,7 @@ if st.button("Calcular") and empresa_filtro:
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     ax.legend(loc="upper left")
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
+    ax.set_xticklabels(df_mensal["Ano_Mes"].dt.strftime('%Y-%m'), rotation=90)
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
@@ -91,7 +91,7 @@ if st.button("Calcular") and empresa_filtro:
     ax2.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", label="Tendência Linear", linewidth=2)
     ax2.bar(pd.date_range(df_mensal["Ano_Mes"].iloc[-1], periods=24, freq='M'), previsao_futura_sarima, color="purple", alpha=0.6, label="Previsão SARIMA", width=15)
     ax2.legend(loc="upper left")
-    ax2.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
+    ax2.set_xticklabels(df_mensal["Ano_Mes"].dt.strftime('%Y-%m'), rotation=90)
     ax2.set_xlabel("Data")
     ax2.set_ylabel("Consumo Médio Total")
     ax2.set_title(f"Consumo Histórico e Previsão - {empresa_filtro}")
