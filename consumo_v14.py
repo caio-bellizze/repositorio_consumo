@@ -68,13 +68,9 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # 🔹 Função para calcular a linha de crescimento exponencial considerando apenas os valores dentro dos limites
-    def calcular_crescimento_exponencial(consumo):
-        x = np.arange(len(consumo))
-        y = consumo.values
-        coeficientes = np.polyfit(x, np.log(y), 1)
-        y_pred_exponencial = np.exp(coeficientes[1]) * np.exp(coeficientes[0] * x)
-        return y_pred_exponencial
+    # 🔹 Função para calcular a média móvel exponencial
+    def calcular_ema(consumo, span=12):
+        return consumo.ewm(span=span, adjust=False).mean()
 
     # 🔹 Função para calcular o CAGR acumulado
     def calcular_cagr_acumulado(consumo):
@@ -83,21 +79,21 @@ if st.button("Calcular") and empresa_filtro:
         y_pred_cagr_acumulado = consumo.iloc[0] * (1 + cagr_acumulado) ** (np.arange(len(consumo)) / 12)
         return y_pred_cagr_acumulado
 
-    # 🔹 Calcular as linhas de crescimento exponencial e CAGR acumulado se selecionadas considerando apenas os valores dentro dos limites
+    # 🔹 Calcular as linhas de crescimento exponencial e CAGR acumulado se selecionadas
     if mostrar_crescimento_exponencial:
-        y_pred_exponencial = calcular_crescimento_exponencial(df_filtrado["Consumo Médio Total"])
+        y_pred_exponencial = calcular_ema(df_filtrado["Consumo Médio Total"])
     
     if mostrar_cagr_acumulado:
         y_pred_cagr_acumulado = calcular_cagr_acumulado(df_mensal["Consumo Médio Total"])
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=6)
+    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.6)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
 
-    # 🔹 Adicionar as linhas de crescimento exponencial e CAGR acumulado se selecionadas considerando apenas os valores dentro dos limites
+    # 🔹 Adicionar as linhas de crescimento exponencial e CAGR acumulado se selecionadas
     if mostrar_crescimento_exponencial:
         ax.plot(df_filtrado["Ano_Mes"], y_pred_exponencial, color="orange", label="Crescimento Exponencial", linewidth=2)
     
