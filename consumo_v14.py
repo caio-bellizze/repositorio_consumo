@@ -63,12 +63,35 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
+    # 🔹 Função para calcular a linha de crescimento exponencial
+    def calcular_crescimento_exponencial(consumo):
+        x = np.arange(len(consumo))
+        y = consumo.values
+        coeficientes = np.polyfit(x, np.log(y), 1)
+        y_pred_exponencial = np.exp(coeficientes[1]) * np.exp(coeficientes[0] * x)
+        return y_pred_exponencial
+
+    # 🔹 Função para calcular o CAGR acumulado
+    def calcular_cagr_acumulado(consumo):
+        anos = len(consumo) / 12  # Convertendo meses para anos
+        cagr_acumulado = (consumo.iloc[-1] / consumo.iloc[0]) ** (1 / anos) - 1
+        y_pred_cagr_acumulado = consumo.iloc[0] * (1 + cagr_acumulado) ** (np.arange(len(consumo)) / 12)
+        return y_pred_cagr_acumulado
+
+    # 🔹 Calcular as linhas de crescimento exponencial e CAGR acumulado
+    y_pred_exponencial = calcular_crescimento_exponencial(df_mensal["Consumo Médio Total"])
+    y_pred_cagr_acumulado = calcular_cagr_acumulado(df_mensal["Consumo Médio Total"])
+
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
+
+    # 🔹 Adicionar as linhas de crescimento exponencial e CAGR acumulado
+    ax.plot(df_mensal["Ano_Mes"], y_pred_exponencial, color="orange", label="Crescimento Exponencial", linewidth=2)
+    ax.plot(df_mensal["Ano_Mes"], y_pred_cagr_acumulado, color="purple", label="CAGR Acumulado", linewidth=2)
 
     # 🔹 Mostrar a flexibilidade estimada e outros elementos
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
