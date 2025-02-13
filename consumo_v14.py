@@ -64,7 +64,7 @@ if st.button("Calcular") and empresa_filtro:
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
     # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%Y.%m")
+    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b")
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
