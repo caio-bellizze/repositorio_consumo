@@ -105,10 +105,10 @@ if st.button("Calcular") and empresa_filtro:
         ax.plot(df_mensal["Ano_Mes"], y_pred_cagr_acumulado, color="purple", label="CAGR Acumulado", linewidth=2)
 
     # 🔹 Mostrar a flexibilidade estimada e outros elementos na legenda principal
-    handles, labels = ax.get_legend_handles_labels()
     flexibilidade_label = f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%"
+    handles, labels = ax.get_legend_handles_labels()
     handles.append(plt.Line2D([0], [0], color='w', label=flexibilidade_label))
-    ax.legend(handles=handles, loc="upper right")
+    ax.legend(handles=handles, loc="lower right")
 
     # Adicionar variação de consumo em % como texto no gráfico em Lower Left sem título e sem linhas à esquerda das variações
     for year in range(data_inicio.year + 1, data_fim.year + 1):
@@ -117,9 +117,9 @@ if st.button("Calcular") and empresa_filtro:
             ax.text(pd.Timestamp(f"{year}-07-01"), ax.get_ylim()[0] - (ax.get_ylim()[1] * 0.1), f"Variação {year-1}-{year}: {variacao:.2f}%", ha='center', va='top', fontsize=10, color='black')
 
     # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=90)
     
     # Adicionar linha vertical para separar os anos
     for year in range(data_inicio.year, data_fim.year + 1):
