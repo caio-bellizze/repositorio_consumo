@@ -92,7 +92,7 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=6)
+    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.6)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
@@ -106,18 +106,15 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Mostrar a flexibilidade estimada e outros elementos na legenda principal
     handles, labels = ax.get_legend_handles_labels()
-    
-    # Adicionar variação de consumo em % na legenda em Lower Left
-    variacao_labels = []
+    flexibilidade_label = f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%"
+    labels.append(flexibilidade_label)
+    ax.legend(handles, labels, loc="upper right")
+
+    # Adicionar variação de consumo em % como texto no gráfico em Lower Left sem título e sem linhas à esquerda das variações
     for year in range(data_inicio.year + 1, data_fim.year + 1):
         if year in variacao_consumo.index:
             variacao = variacao_consumo[year]
-            variacao_labels.append(f"Variação {year-1}-{year}: {variacao:.2f}%")
-    
-    # Criar uma nova legenda para as variações de consumo
-    variacao_legend = ax.legend(handles, labels, loc="lower right")
-    ax.add_artist(variacao_legend)
-    ax.legend(variacao_labels, loc="lower left", fontsize=10)
+            ax.text(pd.Timestamp(f"{year}-07-01"), ax.get_ylim()[0] - (ax.get_ylim()[1] * 0.1), f"Variação {year-1}-{year}: {variacao:.2f}%", ha='center', va='top', fontsize=10, color='black')
 
     # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
