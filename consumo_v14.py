@@ -70,28 +70,17 @@ if st.button("Calcular") and empresa_filtro:
     resultado_sarima = modelo_sarima.fit()
     previsao_futura_sarima = resultado_sarima.forecast(steps=24)
 
-    # 🔹 Criar gráfico com regressão linear
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=20)
-    ax.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", linewidth=3, label="Tendência Linear")
-    ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ)")
-    ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ)")
-    
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-    plt.xticks(rotation=45)
-    
-    ax.legend()
-    ax.set_xlabel("Data")
-    ax.set_ylabel("Consumo Médio Total")
-    ax.set_title(f"Consumo Histórico - {empresa_filtro}")
-    ax.grid(True, linestyle="--", alpha=0.5)
-    st.pyplot(fig)
-    
-    # 🔹 Criar gráfico com previsão SARIMA
+    # 🔹 Criar nova regressão incluindo previsões
+    X_full = np.arange(len(df_mensal) + len(previsao_futura_sarima)).reshape(-1, 1)
+    y_full = np.concatenate([df_mensal["Consumo Médio Total"].values, previsao_futura_sarima])
+    modelo_lr_full = LinearRegression()
+    modelo_lr_full.fit(X_full, y_full)
+    y_pred_lr_full = modelo_lr_full.predict(X_full)
+
+    # 🔹 Criar gráfico com previsão SARIMA e nova regressão
     fig2, ax2 = plt.subplots(figsize=(12, 6))
     ax2.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=20)
-    ax2.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", linewidth=3, label="Tendência Linear")
+    ax2.plot(pd.date_range(df_mensal["Ano_Mes"].iloc[0], periods=len(y_pred_lr_full), freq='M'), y_pred_lr_full, color="orange", linewidth=3, label="Tendência Linear")
     ax2.bar(pd.date_range(df_mensal["Ano_Mes"].iloc[-1], periods=24, freq='M'), previsao_futura_sarima, color="purple", alpha=0.6, label="Previsão SARIMA", width=20)
     
     ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
