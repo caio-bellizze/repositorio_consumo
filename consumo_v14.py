@@ -32,6 +32,7 @@ data_inicio = st.date_input("Data Inicial", value=pd.to_datetime("2022-01-01"))
 data_fim = st.date_input("Data Final", value=pd.to_datetime("2024-12-31"))
 
 # 🔹 Adicionar checkboxes para selecionar linhas de crescimento
+st.write("Selecione quais linhas de tendência deseja exibir no gráfico.")
 mostrar_crescimento_exponencial = st.checkbox("Mostrar Crescimento Exponencial")
 mostrar_cagr_acumulado = st.checkbox("Mostrar CAGR Acumulado")
 
