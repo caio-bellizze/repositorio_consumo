@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
 import openpyxl
+from sklearn.linear_model import LinearRegression
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -55,44 +57,28 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Filtragem para flexibilidade
     df_filtrado = df_mensal[(df_mensal["Consumo Médio Total"] >= limite_inferior) & 
                              (df_mensal["Consumo Médio Total"] <= limite_superior)].copy()
-    df_filtrado["Distancia_Media"] = np.abs(df_filtrado["Consumo Médio Total"] - mediana_consumo)
 
-    # 🔹 Cálculo da flexibilidade estimada
-    flexibilidade_estimativa = (df_filtrado["Distancia_Media"].mean() + num_mad * mad) / mediana_consumo * 100
+    # 🔹 Modelo de Regressão Linear
+    X = np.arange(len(df_mensal)).reshape(-1, 1)
+    y = df_mensal["Consumo Médio Total"].values
+    modelo_lr = LinearRegression()
+    modelo_lr.fit(X, y)
+    y_pred_lr = modelo_lr.predict(X)
 
-    # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
-    media_ajustada = df_filtrado["Consumo Médio Total"].mean()
-
-    # 🔹 Função para calcular o CAGR móvel (em uma janela de n meses)
-    def calcular_cagr_movel(consumo, janela=6):
-        cagr_movel = []
-        for i in range(len(consumo) - janela + 1):
-            valor_inicial = consumo.iloc[i]
-            valor_final = consumo.iloc[i + janela - 1]
-            num_periodos = janela / 12  # Convertendo meses para anos
-            cagr = (valor_final / valor_inicial) ** (1 / num_periodos) - 1
-            cagr_movel.append(cagr)
-        return cagr_movel
-
-    # 🔹 Cálculo do CAGR Móvel para a janela de 6 meses (ajuste conforme necessário)
-    cagr_movel = calcular_cagr_movel(df_mensal["Consumo Médio Total"], janela=6)
-
-    # 🔹 Prever os valores usando o CAGR Móvel para cada janela
-    cagr_percent_movel = [c * 100 for c in cagr_movel]  # Converter para porcentagem
-    y_pred_cagr_movel = [df_mensal["Consumo Médio Total"].iloc[i] * (1 + cagr_movel[i]) ** (j / 12) for i, j in enumerate(range(len(cagr_movel)))]
+    # 🔹 Modelo SARIMA
+    modelo_sarima = SARIMAX(df_mensal["Consumo Médio Total"], order=(1, 1, 1), seasonal_order=(1, 1, 1, 12))
+    resultado_sarima = modelo_sarima.fit()
+    previsao_sarima = resultado_sarima.predict(start=0, end=len(df_mensal)-1)
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
-    ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
+    ax.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", label="Tendência Linear", linewidth=2)
+    ax.plot(df_mensal["Ano_Mes"], previsao_sarima, color="purple", linestyle="--", label="Previsão SARIMA", linewidth=2)
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
-    # 🔹 Adicionar a linha de tendência do CAGR Móvel
-    ax.plot(df_mensal["Ano_Mes"].iloc[5:], y_pred_cagr_movel, color="orange", label=f"Linha de Tendência Móvel (CAGR)", linewidth=2)
-
-    # 🔹 Mostrar a flexibilidade estimada e outros elementos
-    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
+    ax.legend(loc="upper left")
     ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
