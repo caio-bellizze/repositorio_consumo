@@ -88,7 +88,7 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=6)
+    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.6)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
@@ -104,10 +104,14 @@ if st.button("Calcular") and empresa_filtro:
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
     
     # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
-    plt.xticks(rotation=90)
+    plt.xticks(rotation=45)
     
+    # Adicionar linha vertical para separar os anos
+    for year in range(data_inicio.year, data_fim.year + 1):
+        ax.axvline(pd.Timestamp(f"{year}-01-01"), color='gray', linestyle='--', linewidth=1)
+
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
