@@ -107,8 +107,8 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Mostrar a flexibilidade estimada e outros elementos na legenda principal
     handles, labels = ax.get_legend_handles_labels()
     flexibilidade_label = f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%"
-    labels.append(flexibilidade_label)
-    ax.legend(handles, labels, loc="upper right")
+    handles.append(plt.Line2D([0], [0], color='w', label=flexibilidade_label))
+    ax.legend(handles=handles, loc="upper right")
 
     # Adicionar variação de consumo em % como texto no gráfico em Lower Left sem título e sem linhas à esquerda das variações
     for year in range(data_inicio.year + 1, data_fim.year + 1):
