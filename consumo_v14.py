@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
 import openpyxl
-import matplotlib.dates as mdates
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -31,10 +30,6 @@ num_mad = st.slider("Escolha o número de desvios padrões para determinar os li
 df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
 data_inicio = st.date_input("Data Inicial", value=pd.to_datetime("2022-01-01"))
 data_fim = st.date_input("Data Final", value=pd.to_datetime("2024-12-31"))
-
-# 🔹 Adicionar checkboxes para selecionar linhas de crescimento
-mostrar_crescimento_exponencial = st.checkbox("Mostrar Crescimento Exponencial")
-mostrar_cagr_acumulado = st.checkbox("Mostrar CAGR Acumulado")
 
 # 🔹 Criar botão para gerar o gráfico
 if st.button("Calcular") and empresa_filtro:
@@ -68,66 +63,31 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # 🔹 Função para calcular a média móvel exponencial
-    def calcular_ema(consumo, span=12):
-        return consumo.ewm(span=span, adjust=False).mean()
-
-    # 🔹 Função para calcular o CAGR acumulado
-    def calcular_cagr_acumulado(consumo):
-        anos = len(consumo) / 12  # Convertendo meses para anos
-        cagr_acumulado = (consumo.iloc[-1] / consumo.iloc[0]) ** (1 / anos) - 1
-        y_pred_cagr_acumulado = consumo.iloc[0] * (1 + cagr_acumulado) ** (np.arange(len(consumo)) / 12)
-        return y_pred_cagr_acumulado
-
-    # 🔹 Calcular as linhas de crescimento exponencial e CAGR acumulado se selecionadas
-    if mostrar_crescimento_exponencial:
-        y_pred_exponencial = calcular_ema(df_filtrado["Consumo Médio Total"])
-    
-    if mostrar_cagr_acumulado:
-        y_pred_cagr_acumulado = calcular_cagr_acumulado(df_mensal["Consumo Médio Total"])
-
-    # 🔹 Calcular a variação de consumo em % entre um ano e outro
-    consumo_por_ano = df_filtrado.groupby(df_filtrado['Ano_Mes'].dt.year)['Consumo Médio Total'].sum()
-    variacao_consumo = consumo_por_ano.pct_change() * 100
+    # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
+    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%Y.%m")
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.6)
+    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
-
-    # 🔹 Adicionar as linhas de crescimento exponencial e CAGR acumulado se selecionadas
-    if mostrar_crescimento_exponencial:
-        ax.plot(df_filtrado["Ano_Mes"], y_pred_exponencial, color="orange", label="Crescimento Exponencial", linewidth=2)
     
-    if mostrar_cagr_acumulado:
-        ax.plot(df_mensal["Ano_Mes"], y_pred_cagr_acumulado, color="purple", label="CAGR Acumulado", linewidth=2)
-
-    # 🔹 Mostrar a flexibilidade estimada e outros elementos na legenda principal
-    flexibilidade_label = f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%"
-    handles, labels = ax.get_legend_handles_labels()
-    handles.append(plt.Line2D([0], [0], color='w', label=flexibilidade_label))
-    ax.legend(handles=handles, loc="lower right")
-
-    # Adicionar variação de consumo em % como texto no gráfico em Lower Left sem título e sem linhas à esquerda das variações
-    for year in range(data_inicio.year + 1, data_fim.year + 1):
-        if year in variacao_consumo.index:
-            variacao = variacao_consumo[year]
-            ax.text(pd.Timestamp(f"{year}-07-01"), ax.get_ylim()[0] - (ax.get_ylim()[1] * 0.1), f"Variação {year-1}-{year}: {variacao:.2f}%", ha='center', va='top', fontsize=10, color='black')
-
-    # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
-    plt.xticks(rotation=90)
+    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="center right")
     
-    # Adicionar linha vertical para separar os anos
-    for year in range(data_inicio.year, data_fim.year + 1):
-        ax.axvline(pd.Timestamp(f"{year}-01-01"), color='gray', linestyle='--', linewidth=1)
+    # Adicionando linha divisória entre anos
+    ax.axvline(x=11.5, color='green', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
 
+    # Ajustando os rótulos do eixo X
+    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
+    
+    # Adicionando os anos abaixo do eixo X
+    for i, ano in enumerate(["2023", "2024"]):
+        ax.text(i * 12 + 5.5, -4, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
+
     ax.grid(True, linestyle="--", alpha=0.5)
 
     # 🔹 Exibir gráfico no Streamlit
