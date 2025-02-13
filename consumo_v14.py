@@ -76,8 +76,8 @@ if st.button("Calcular") and empresa_filtro:
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
     
     # Adicionando linha divisória entre anos
-    ax.axvline(x=11.5, color='black', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
-    ax.axvline(x=11.5, color='black', linestyle='dashed', ymin=1, ymax=2)  # Linha divisória entre os anos
+    ax.axvline(x=11.5, color='black', linestyle='dashed', ymin=-0.5, ymax=1)  # Linha divisória entre os anos
+    ax.axvline(x=23.5, color='black', linestyle='dashed', ymin=-0.5, ymax=1)  # Linha divisória entre os anos
 
     # Ajustando os rótulos do eixo X
     ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
@@ -86,7 +86,7 @@ if st.button("Calcular") and empresa_filtro:
     
     # Adicionando os anos abaixo do eixo X
     for i, ano in enumerate(["2022" , "2023", "2024"]):
-        ax.text(i * 12 + 5.5, -3.5, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
+        ax.text(i * 12 + 5.5, -4, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
 
     ax.grid(True, linestyle="--", alpha=0.5)
 
