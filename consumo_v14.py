@@ -109,8 +109,8 @@ if st.button("Calcular") and empresa_filtro:
     
     # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
-    plt.xticks(rotation=45)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%m"))
+    plt.xticks(rotation=0)
     
     # Adicionar linha vertical para separar os anos
     for year in range(data_inicio.year, data_fim.year + 1):
