@@ -4,3 +4,5 @@ pandas
 numpy
 spicy
 openpyxl
+scikit-learn
+statsmodels
