@@ -112,6 +112,14 @@ if st.button("Calcular") and empresa_filtro:
     for year in range(data_inicio.year, data_fim.year + 1):
         ax.axvline(pd.Timestamp(f"{year}-01-01"), color='gray', linestyle='--', linewidth=1)
 
+    # Adicionar anos completos embaixo dos meses
+    ax2 = ax.twiny()
+    ax2.set_xlim(ax.get_xlim())
+    ax2.xaxis.set_major_locator(mdates.YearLocator())
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax2.xaxis.tick_top()
+    ax2.tick_params(axis='x', rotation=0)
+
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
