@@ -104,31 +104,29 @@ if st.button("Calcular") and empresa_filtro:
     if mostrar_cagr_acumulado:
         ax.plot(df_mensal["Ano_Mes"], y_pred_cagr_acumulado, color="purple", label="CAGR Acumulado", linewidth=2)
 
-    # 🔹 Mostrar a flexibilidade estimada e outros elementos
-    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
+    # 🔹 Mostrar a flexibilidade estimada e outros elementos na legenda principal
+    handles, labels = ax.get_legend_handles_labels()
     
+    # Adicionar variação de consumo em % na legenda em Lower Left
+    variacao_labels = []
+    for year in range(data_inicio.year + 1, data_fim.year + 1):
+        if year in variacao_consumo.index:
+            variacao = variacao_consumo[year]
+            variacao_labels.append(f"Variação {year-1}-{year}: {variacao:.2f}%")
+    
+    # Criar uma nova legenda para as variações de consumo
+    variacao_legend = ax.legend(handles, labels, loc="upper right")
+    ax.add_artist(variacao_legend)
+    ax.legend(variacao_labels, loc="lower left", fontsize=10, title="Variação de Consumo")
+
     # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%m"))
-    plt.xticks(rotation=0)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+    plt.xticks(rotation=45)
     
     # Adicionar linha vertical para separar os anos
     for year in range(data_inicio.year, data_fim.year + 1):
         ax.axvline(pd.Timestamp(f"{year}-01-01"), color='gray', linestyle='--', linewidth=1)
-
-    # Adicionar anos completos e variação de consumo em % na parte de baixo do gráfico
-    ax2 = ax.twiny()
-    ax2.set_xlim(ax.get_xlim())
-    ax2.xaxis.set_major_locator(mdates.YearLocator())
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax2.xaxis.tick_bottom()
-    ax2.tick_params(axis='x', rotation=0)
-
-    # Adicionar variação de consumo em % na parte de baixo do gráfico entre os anos
-    for year in range(data_inicio.year + 1, data_fim.year + 1):
-        if year in variacao_consumo.index:
-            variacao = variacao_consumo[year]
-            ax2.text(pd.Timestamp(f"{year}-07-01"), ax.get_ylim()[0] - (ax.get_ylim()[1] * 0.1), f"Variação {year-1}-{year}: {variacao:.2f}%", ha='center', va='top', fontsize=10, color='black')
 
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
