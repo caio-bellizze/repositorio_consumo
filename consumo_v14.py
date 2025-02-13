@@ -64,7 +64,7 @@ if st.button("Calcular") and empresa_filtro:
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
     # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%m")
+    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%Y-%m")
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -80,7 +80,7 @@ if st.button("Calcular") and empresa_filtro:
     ax.axvline(x=11.5, color='black', linestyle='dashed', ymin=1, ymax=2)  # Linha divisória entre os anos
 
     # Ajustando os rótulos do eixo X
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=0)
+    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
     
