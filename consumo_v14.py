@@ -86,6 +86,10 @@ if st.button("Calcular") and empresa_filtro:
     if mostrar_cagr_acumulado:
         y_pred_cagr_acumulado = calcular_cagr_acumulado(df_mensal["Consumo Médio Total"])
 
+    # 🔹 Calcular a variação de consumo em % entre um ano e outro
+    consumo_por_ano = df_filtrado.groupby(df_filtrado['Ano_Mes'].dt.year)['Consumo Médio Total'].sum()
+    variacao_consumo = consumo_por_ano.pct_change() * 100
+
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.6)
@@ -119,6 +123,12 @@ if st.button("Calcular") and empresa_filtro:
     ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     ax2.xaxis.tick_top()
     ax2.tick_params(axis='x', rotation=0)
+
+    # Adicionar variação de consumo em % no topo do gráfico entre os anos
+    for year in range(data_inicio.year + 1, data_fim.year + 1):
+        if year in variacao_consumo.index:
+            variacao = variacao_consumo[year]
+            ax2.text(pd.Timestamp(f"{year}-07-01"), ax.get_ylim()[1] * 1.05, f"Variação {year-1}-{year}: {variacao:.2f}%", ha='center', va='bottom', fontsize=10, color='black')
 
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
