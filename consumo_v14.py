@@ -115,7 +115,7 @@ if st.button("Calcular") and empresa_filtro:
             variacao_labels.append(f"Variação {year-1}-{year}: {variacao:.2f}%")
     
     # Criar uma nova legenda para as variações de consumo
-    variacao_legend = ax.legend(handles, labels, loc="upper right")
+    variacao_legend = ax.legend(handles, labels, loc="lower right")
     ax.add_artist(variacao_legend)
     ax.legend(variacao_labels, loc="lower left", fontsize=10, title="Variação de Consumo")
 
