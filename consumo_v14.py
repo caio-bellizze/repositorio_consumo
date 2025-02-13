@@ -69,21 +69,31 @@ if st.button("Calcular") and empresa_filtro:
     modelo_sarima = SARIMAX(df_mensal["Consumo Médio Total"], order=(1, 1, 1), seasonal_order=(1, 1, 1, 12))
     resultado_sarima = modelo_sarima.fit()
     previsao_sarima = resultado_sarima.predict(start=0, end=len(df_mensal)-1)
+    previsao_futura_sarima = resultado_sarima.forecast(steps=24)
 
-    # 🔹 Criar gráfico
+    # 🔹 Criar gráfico com regressão linear
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
     ax.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", label="Tendência Linear", linewidth=2)
-    ax.plot(df_mensal["Ano_Mes"], previsao_sarima, color="purple", linestyle="--", label="Previsão SARIMA", linewidth=2)
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
-    
     ax.legend(loc="upper left")
     ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
     ax.grid(True, linestyle="--", alpha=0.5)
-
-    # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
+    
+    # 🔹 Criar gráfico com previsão SARIMA
+    fig2, ax2 = plt.subplots(figsize=(12, 6))
+    ax2.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
+    ax2.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", label="Tendência Linear", linewidth=2)
+    ax2.bar(pd.date_range(df_mensal["Ano_Mes"].iloc[-1], periods=24, freq='M'), previsao_futura_sarima, color="purple", alpha=0.6, label="Previsão SARIMA", width=15)
+    ax2.legend(loc="upper left")
+    ax2.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
+    ax2.set_xlabel("Data")
+    ax2.set_ylabel("Consumo Médio Total")
+    ax2.set_title(f"Consumo Histórico e Previsão - {empresa_filtro}")
+    ax2.grid(True, linestyle="--", alpha=0.5)
+    st.pyplot(fig2)
