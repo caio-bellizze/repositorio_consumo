@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
 import openpyxl
+import matplotlib.dates as mdates
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -32,7 +33,6 @@ data_inicio = st.date_input("Data Inicial", value=pd.to_datetime("2022-01-01"))
 data_fim = st.date_input("Data Final", value=pd.to_datetime("2024-12-31"))
 
 # 🔹 Adicionar checkboxes para selecionar linhas de crescimento
-st.write("Selecione quais linhas de tendência deseja exibir no gráfico.")
 mostrar_crescimento_exponencial = st.checkbox("Mostrar Crescimento Exponencial")
 mostrar_cagr_acumulado = st.checkbox("Mostrar CAGR Acumulado")
 
@@ -92,7 +92,7 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
+    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.6)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
@@ -106,7 +106,12 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Mostrar a flexibilidade estimada e outros elementos
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
+    
+    # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+    plt.xticks(rotation=45)
+    
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
