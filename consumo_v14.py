@@ -104,9 +104,9 @@ if st.button("Calcular") and empresa_filtro:
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
     
     # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=90)
     
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
