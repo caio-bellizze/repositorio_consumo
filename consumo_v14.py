@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
-from scipy.optimize import curve_fit
 import openpyxl
 
 # 🔹 Configuração do Streamlit
@@ -64,52 +63,14 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # 🔹 Função para calcular o CAGR acumulado
-    def calcular_cagr_acumulado(consumo, janela=1):
-        cagr_acumulado = []
-        for i in range(len(consumo)):
-            if i == 0:
-                cagr_acumulado.append(consumo.iloc[i])  # Primeira data sem alteração
-            else:
-                cagr = (consumo.iloc[i] / consumo.iloc[i - 1]) - 1  # Crescimento relativo
-                cagr_acumulado.append(consumo.iloc[0] * (1 + cagr) ** (i))  # Aplica CAGR acumulado
-        return cagr_acumulado
-
-    # 🔹 Função de modelo exponencial: y = a * exp(b * x)
-    def modelo_exponencial(x, a, b):
-        return a * np.exp(b * x)
-
-    # Preparar os dados para o ajuste do modelo exponencial
-    x_data = np.arange(len(df_mensal))  # Índices dos meses
-    y_data = df_mensal["Consumo Médio Total"].values
-
-    # Ajustar os parâmetros a e b para o modelo exponencial
-    params, covariance = curve_fit(modelo_exponencial, x_data, y_data, p0=[1, 0.1])
-
-    # Gerar os valores ajustados pela curva de crescimento exponencial
-    y_fit = modelo_exponencial(x_data, *params)
-
-    # Calcular o CAGR acumulado com uma janela de 1 mês
-    cagr_acumulado = calcular_cagr_acumulado(df_mensal["Consumo Médio Total"])
-
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-
-    # Gráfico de barras para o consumo mensal
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
-
-    # Adicionar a linha da média ajustada e os limites
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
-    
-    # Adicionar a linha da curva de crescimento exponencial
-    ax.plot(df_mensal["Ano_Mes"], y_fit, color="orange", label="Curva de Crescimento Exponencial", linewidth=2)
 
-    # Adicionar a linha da curva de crescimento acumulado (CAGR)
-    ax.plot(df_mensal["Ano_Mes"], cagr_acumulado, color="purple", label="Curva de Crescimento Acumulado (CAGR)", linewidth=2)
-
-    # Personalizar gráfico
+    # 🔹 Mostrar a flexibilidade estimada e outros elementos
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
     ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
     ax.set_xlabel("Data")
@@ -117,6 +78,5 @@ if st.button("Calcular") and empresa_filtro:
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
     ax.grid(True, linestyle="--", alpha=0.5)
 
-    # Exibir o gráfico no Streamlit
+    # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
-
