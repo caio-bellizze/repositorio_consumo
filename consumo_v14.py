@@ -64,7 +64,7 @@ if st.button("Calcular") and empresa_filtro:
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
     # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%Y-%m")
+    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%m")
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -73,20 +73,20 @@ if st.button("Calcular") and empresa_filtro:
     ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
-    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="center right")
+    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
     
     # Adicionando linha divisória entre anos
     ax.axvline(x=11.5, color='black', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
     ax.axvline(x=11.5, color='black', linestyle='dashed', ymin=1, ymax=2)  # Linha divisória entre os anos
 
     # Ajustando os rótulos do eixo X
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
+    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=0)
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
     
     # Adicionando os anos abaixo do eixo X
     for i, ano in enumerate(["2022" , "2023", "2024"]):
-        ax.text(i * 12 + 5.5, -1, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
+        ax.text(i * 12 + 5.5, -2, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
 
     ax.grid(True, linestyle="--", alpha=0.5)
 
