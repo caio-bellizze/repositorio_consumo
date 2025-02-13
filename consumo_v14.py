@@ -3,10 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
+from scipy.optimize import curve_fit
 import openpyxl
-from sklearn.linear_model import LinearRegression
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-import matplotlib.dates as mdates
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -43,8 +41,9 @@ if st.button("Calcular") and empresa_filtro:
     df_empresa = df_empresa[(df_empresa["Data"] >= pd.to_datetime(data_inicio)) & 
                              (df_empresa["Data"] <= pd.to_datetime(data_fim))]
     
-    df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M").dt.to_timestamp()
+    df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M")
     df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
+    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.to_timestamp(how="start")
 
     # 🔹 Cálculo do Modified Z-score
     mediana_consumo = np.median(df_mensal["Consumo Médio Total"])
@@ -57,38 +56,67 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Filtragem para flexibilidade
     df_filtrado = df_mensal[(df_mensal["Consumo Médio Total"] >= limite_inferior) & 
                              (df_mensal["Consumo Médio Total"] <= limite_superior)].copy()
+    df_filtrado["Distancia_Media"] = np.abs(df_filtrado["Consumo Médio Total"] - mediana_consumo)
 
-    # 🔹 Modelo de Regressão Linear
-    X = np.arange(len(df_mensal)).reshape(-1, 1)
-    y = df_mensal["Consumo Médio Total"].values
-    modelo_lr = LinearRegression()
-    modelo_lr.fit(X, y)
-    y_pred_lr = modelo_lr.predict(X)
+    # 🔹 Cálculo da flexibilidade estimada
+    flexibilidade_estimativa = (df_filtrado["Distancia_Media"].mean() + num_mad * mad) / mediana_consumo * 100
 
-    # 🔹 Modelo SARIMA
-    modelo_sarima = SARIMAX(df_mensal["Consumo Médio Total"], order=(1, 1, 1), seasonal_order=(1, 1, 1, 12))
-    resultado_sarima = modelo_sarima.fit()
-    previsao_futura_sarima = resultado_sarima.forecast(steps=24)
+    # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
+    media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # 🔹 Criar nova regressão incluindo previsões
-    X_full = np.arange(len(df_mensal) + len(previsao_futura_sarima)).reshape(-1, 1)
-    y_full = np.concatenate([df_mensal["Consumo Médio Total"].values, previsao_futura_sarima])
-    modelo_lr_full = LinearRegression()
-    modelo_lr_full.fit(X_full, y_full)
-    y_pred_lr_full = modelo_lr_full.predict(X_full)
+    # 🔹 Função para calcular o CAGR acumulado
+    def calcular_cagr_acumulado(consumo, janela=1):
+        cagr_acumulado = []
+        for i in range(len(consumo)):
+            if i == 0:
+                cagr_acumulado.append(consumo.iloc[i])  # Primeira data sem alteração
+            else:
+                cagr = (consumo.iloc[i] / consumo.iloc[i - 1]) - 1  # Crescimento relativo
+                cagr_acumulado.append(consumo.iloc[0] * (1 + cagr) ** (i))  # Aplica CAGR acumulado
+        return cagr_acumulado
 
-    # 🔹 Criar gráfico com previsão SARIMA e nova regressão
-    fig2, ax2 = plt.subplots(figsize=(12, 6))
-    ax2.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=20)
-    ax2.plot(pd.date_range(df_mensal["Ano_Mes"].iloc[0], periods=len(y_pred_lr_full), freq='M'), y_pred_lr_full, color="orange", linewidth=3, label="Tendência Linear")
-    ax2.bar(pd.date_range(df_mensal["Ano_Mes"].iloc[-1], periods=24, freq='M'), previsao_futura_sarima, color="purple", alpha=0.6, label="Previsão SARIMA", width=20)
+    # 🔹 Função de modelo exponencial: y = a * exp(b * x)
+    def modelo_exponencial(x, a, b):
+        return a * np.exp(b * x)
+
+    # Preparar os dados para o ajuste do modelo exponencial
+    x_data = np.arange(len(df_mensal))  # Índices dos meses
+    y_data = df_mensal["Consumo Médio Total"].values
+
+    # Ajustar os parâmetros a e b para o modelo exponencial
+    params, covariance = curve_fit(modelo_exponencial, x_data, y_data, p0=[1, 0.1])
+
+    # Gerar os valores ajustados pela curva de crescimento exponencial
+    y_fit = modelo_exponencial(x_data, *params)
+
+    # Calcular o CAGR acumulado com uma janela de 1 mês
+    cagr_acumulado = calcular_cagr_acumulado(df_mensal["Consumo Médio Total"])
+
+    # 🔹 Criar gráfico
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Gráfico de barras para o consumo mensal
+    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
+
+    # Adicionar a linha da média ajustada e os limites
+    ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
+    ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
+    ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
-    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-    plt.xticks(rotation=45)
-    
-    ax2.set_xlabel("Data")
-    ax2.set_ylabel("Consumo Médio Total")
-    ax2.set_title(f"Consumo Histórico e Previsão - {empresa_filtro}")
-    ax2.grid(True, linestyle="--", alpha=0.5)
-    st.pyplot(fig2)
+    # Adicionar a linha da curva de crescimento exponencial
+    ax.plot(df_mensal["Ano_Mes"], y_fit, color="orange", label="Curva de Crescimento Exponencial", linewidth=2)
+
+    # Adicionar a linha da curva de crescimento acumulado (CAGR)
+    ax.plot(df_mensal["Ano_Mes"], cagr_acumulado, color="purple", label="Curva de Crescimento Acumulado (CAGR)", linewidth=2)
+
+    # Personalizar gráfico
+    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
+    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
+    ax.set_xlabel("Data")
+    ax.set_ylabel("Consumo Médio Total")
+    ax.set_title(f"Consumo Histórico - {empresa_filtro}")
+    ax.grid(True, linestyle="--", alpha=0.5)
+
+    # Exibir o gráfico no Streamlit
+    st.pyplot(fig)
+
