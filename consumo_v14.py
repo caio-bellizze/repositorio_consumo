@@ -116,19 +116,19 @@ if st.button("Calcular") and empresa_filtro:
     for year in range(data_inicio.year, data_fim.year + 1):
         ax.axvline(pd.Timestamp(f"{year}-01-01"), color='gray', linestyle='--', linewidth=1)
 
-    # Adicionar anos completos embaixo dos meses
+    # Adicionar anos completos e variação de consumo em % na parte de baixo do gráfico
     ax2 = ax.twiny()
     ax2.set_xlim(ax.get_xlim())
     ax2.xaxis.set_major_locator(mdates.YearLocator())
     ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax2.xaxis.tick_top()
+    ax2.xaxis.tick_bottom()
     ax2.tick_params(axis='x', rotation=0)
 
-    # Adicionar variação de consumo em % no topo do gráfico entre os anos
+    # Adicionar variação de consumo em % na parte de baixo do gráfico entre os anos
     for year in range(data_inicio.year + 1, data_fim.year + 1):
         if year in variacao_consumo.index:
             variacao = variacao_consumo[year]
-            ax2.text(pd.Timestamp(f"{year}-07-01"), ax.get_ylim()[1] * 1.05, f"Variação {year-1}-{year}: {variacao:.2f}%", ha='center', va='bottom', fontsize=10, color='black')
+            ax2.text(pd.Timestamp(f"{year}-07-01"), ax.get_ylim()[0] - (ax.get_ylim()[1] * 0.1), f"Variação {year-1}-{year}: {variacao:.2f}%", ha='center', va='top', fontsize=10, color='black')
 
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
