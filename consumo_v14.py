@@ -117,7 +117,7 @@ if st.button("Calcular") and empresa_filtro:
     # Criar uma nova legenda para as variações de consumo
     variacao_legend = ax.legend(handles, labels, loc="lower right")
     ax.add_artist(variacao_legend)
-    ax.legend(variacao_labels, loc="lower left", fontsize=10, title="Variação de Consumo")
+    ax.legend(variacao_labels, loc="lower left", fontsize=10)
 
     # Formatar datas no eixo x trimestralmente e em 45 graus no formato AAAA-MM
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
