@@ -6,6 +6,7 @@ from scipy.stats.mstats import winsorize
 import openpyxl
 from sklearn.linear_model import LinearRegression
 from statsmodels.tsa.statespace.sarimax import SARIMAX
+import matplotlib.dates as mdates
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -42,9 +43,8 @@ if st.button("Calcular") and empresa_filtro:
     df_empresa = df_empresa[(df_empresa["Data"] >= pd.to_datetime(data_inicio)) & 
                              (df_empresa["Data"] <= pd.to_datetime(data_fim))]
     
-    df_empresa["Ano_Mes"] = df_empresa["Data"].dt.strftime('%Y-%m')
+    df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M").dt.to_timestamp()
     df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
-    df_mensal["Ano_Mes"] = pd.to_datetime(df_mensal["Ano_Mes"])
 
     # 🔹 Cálculo do Modified Z-score
     mediana_consumo = np.median(df_mensal["Consumo Médio Total"])
@@ -68,17 +68,20 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Modelo SARIMA
     modelo_sarima = SARIMAX(df_mensal["Consumo Médio Total"], order=(1, 1, 1), seasonal_order=(1, 1, 1, 12))
     resultado_sarima = modelo_sarima.fit()
-    previsao_sarima = resultado_sarima.predict(start=0, end=len(df_mensal)-1)
     previsao_futura_sarima = resultado_sarima.forecast(steps=24)
 
     # 🔹 Criar gráfico com regressão linear
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
-    ax.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", label="Tendência Linear", linewidth=2)
-    ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
-    ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
-    ax.legend(loc="upper left")
-    ax.set_xticklabels(df_mensal["Ano_Mes"].dt.strftime('%Y-%m'), rotation=90)
+    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=20)
+    ax.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", linewidth=3, label="Tendência Linear")
+    ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ)")
+    ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ)")
+    
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+    plt.xticks(rotation=45)
+    
+    ax.legend()
     ax.set_xlabel("Data")
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
@@ -87,11 +90,15 @@ if st.button("Calcular") and empresa_filtro:
     
     # 🔹 Criar gráfico com previsão SARIMA
     fig2, ax2 = plt.subplots(figsize=(12, 6))
-    ax2.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
-    ax2.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", label="Tendência Linear", linewidth=2)
-    ax2.bar(pd.date_range(df_mensal["Ano_Mes"].iloc[-1], periods=24, freq='M'), previsao_futura_sarima, color="purple", alpha=0.6, label="Previsão SARIMA", width=15)
-    ax2.legend(loc="upper left")
-    ax2.set_xticklabels(df_mensal["Ano_Mes"].dt.strftime('%Y-%m'), rotation=90)
+    ax2.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=20)
+    ax2.plot(df_mensal["Ano_Mes"], y_pred_lr, color="orange", linewidth=3, label="Tendência Linear")
+    ax2.bar(pd.date_range(df_mensal["Ano_Mes"].iloc[-1], periods=24, freq='M'), previsao_futura_sarima, color="purple", alpha=0.6, label="Previsão SARIMA", width=20)
+    
+    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+    plt.xticks(rotation=45)
+    
+    ax2.legend()
     ax2.set_xlabel("Data")
     ax2.set_ylabel("Consumo Médio Total")
     ax2.set_title(f"Consumo Histórico e Previsão - {empresa_filtro}")
