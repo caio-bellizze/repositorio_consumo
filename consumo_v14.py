@@ -44,6 +44,10 @@ if st.button("Calcular") and empresa_filtro:
     df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
     df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.to_timestamp(how="start")
 
+    # 🔹 Criar colunas separadas para Ano e Mês
+    df_mensal["Ano"] = df_mensal["Ano_Mes"].dt.year
+    df_mensal["Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b")  # Abreviação do mês (Jan, Fev, ...)
+
     # 🔹 Cálculo do Modified Z-score
     mediana_consumo = np.median(df_mensal["Consumo Médio Total"])
     mad = np.median(np.abs(df_mensal["Consumo Médio Total"] - mediana_consumo))
@@ -63,30 +67,32 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%Y-%m")
+    # 🔹 Criar rótulos do eixo X apenas com os meses
+    df_mensal["Mes_Ano"] = df_mensal["Mes"]  # Apenas os meses no eixo X
+    anos_unicos = df_mensal["Ano"].unique()
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
+    ax.bar(df_mensal["Mes_Ano"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
-    ax.axhline(y=limite_superior, color="orange", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
-    ax.axhline(y=limite_inferior, color="orange", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
+    ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
+    ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
     
-    # Adicionando linha divisória entre anos
-    ax.axvline(x=11.5, color='gray', linestyle='dashed', ymin=-0.5, ymax=1)  # Linha divisória entre os anos
-    ax.axvline(x=23.5, color='gray', linestyle='dashed', ymin=-0.5, ymax=1)  # Linha divisória entre os anos
+    # 🔹 Adicionando linha divisória entre anos
+    posicao_divisoes = np.where(df_mensal["Mes"] == "Jan")[0]
+    for pos in posicao_divisoes:
+        ax.axvline(x=pos - 0.5, color='black', linestyle='dashed')  
 
-    # Ajustando os rótulos do eixo X
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
+    # 🔹 Adicionando os anos abaixo do eixo X
+    for i, ano in enumerate(anos_unicos):
+        ax.text(i * 12 + 5.5, -4, str(ano), fontsize=12, ha="center", color="black")  
+
+    # 🔹 Ajustando os rótulos do eixo X
+    ax.set_xticklabels(df_mensal["Mes_Ano"], rotation=90)
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
-    
-    # Adicionando os anos abaixo do eixo X
-    for i, ano in enumerate(["2022" , "2023", "2024"]):
-        ax.text(i * 12 + 5.5, -4, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
 
     ax.grid(True, linestyle="--", alpha=0.5)
 
