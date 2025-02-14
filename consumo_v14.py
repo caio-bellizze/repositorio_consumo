@@ -63,10 +63,12 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # Calcular o consumo total em MWh
+    # Calcular o consumo total em MWh e suas variações
     consumo_mwh_2022 = df_empresa[df_empresa["Data"].dt.year == 2022]["CONSUMO_TOTAL"].sum()
     consumo_mwh_2023 = df_empresa[df_empresa["Data"].dt.year == 2023]["CONSUMO_TOTAL"].sum()
     consumo_mwh_2024 = (df_empresa[df_empresa["Data"].dt.year == 2024]["CONSUMO_TOTAL"].sum())/1000000
+    variacao_2022_2023 = ( consumo_mwh_2023 - consumo_mwh_2022 ) / consumo_mwh_2022 * 100
+    variacao_2023_2024 = ( consumo_mwh_2024 - consumo_mwh_2023 ) / consumo_mwh_2023 * 100
 
     # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
     df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b-%y")
@@ -96,8 +98,8 @@ if st.button("Calcular") and empresa_filtro:
     ax.grid(True, linestyle="--", alpha=0.5)
 
     # Adicionando texto extra entre os anos
-    ax.text(11.5, -6, "Período de Estabilidade", fontsize=10, ha="center", color="red")
-    ax.text(23.5, -6, "Aumento no Consumo", fontsize=10, ha="center", color="red")
+    ax.text(11.5, -5, variacao_2022_2023 , fontsize=10, ha="center", color="red")
+    ax.text(23.5, -5, variacao_2023_2024 , fontsize=10, ha="center", color="red")
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
