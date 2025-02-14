@@ -85,7 +85,7 @@ if st.button("Calcular") and empresa_filtro:
     # Criar um box com informações adicionais no gráfico
     texto_legenda = (
     f"Variação no consumo 2022-2023: {variacao_2022_2023:.2f}%\n"
-    f"Variação no consumo 2023-2024: {variacao_2023_2024:.2f}%\n")
+    f"Variação no consumo 2023-2024: {variacao_2023_2024:.2f}%")
 
     # Adicionando o box ao gráfico
     ax.text(
