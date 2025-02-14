@@ -26,6 +26,8 @@ empresa_filtro = st.selectbox("Selecione uma empresa", options=empresas, index=N
 # 🔹 Adicionar um slider para o número de MADs
 num_mad = st.slider("Escolha o número de desvios padrões para determinar os limites", min_value=1, max_value=5, value=2)
 
+year_distance = st.slider("Escolha a distância dos anos até o eixo X", min_value=-10.0, max_value=0.0, value=-5.0, step=0.1)
+
 # 🔹 Adicionar seleção de intervalo de datas
 df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
 data_inicio = st.date_input("Data Inicial", value=pd.to_datetime("2022-01-01"))
@@ -77,8 +79,8 @@ if st.button("Calcular") and empresa_filtro:
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
-    ax.axhline(y=limite_superior, color="orange", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
-    ax.axhline(y=limite_inferior, color="orange", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
+    ax.axhline(y=limite_superior, color="orangered", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
+    ax.axhline(y=limite_inferior, color="orangered", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
 
@@ -105,7 +107,7 @@ if st.button("Calcular") and empresa_filtro:
     
     # Adicionando os anos abaixo do eixo X
     for i, ano in enumerate(["2022" , "2023", "2024"]):
-        ax.text(i * 12 + 5.5, -4, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
+        ax.text(i * 12 + 5.5, year_distance , ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
