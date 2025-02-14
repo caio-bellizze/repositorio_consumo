@@ -83,21 +83,20 @@ if st.button("Calcular") and empresa_filtro:
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
 
     # Criar um box com informações adicionais no gráfico
-texto_legenda = (
+    texto_legenda = (
     f"Variação no consumo 2022-2023: {varicao_2022_2023:.2f}%\n"
     f"Variação no consumo 2023-2024: {varicao_2023_2024:.2f}%\n")
 
-# Adicionando o box ao gráfico
-ax.text(
+    # Adicionando o box ao gráfico
+    ax.text(
     0.98, 0.98, texto_legenda, transform=ax.transAxes, fontsize=10,
     verticalalignment='top', horizontalalignment='right',
-    bbox=dict(boxstyle="round,pad=0.5", edgecolor="black", facecolor="white")
-)
+    bbox=dict(boxstyle="round,pad=0.5", edgecolor="black", facecolor="white"))
 
     
     # Adicionando linha divisória entre anos
-    ax.axvline(x=11.5, color='gray', linestyle='dashed', ymin=-0.5, ymax=1)  # Linha divisória entre os anos
-    ax.axvline(x=23.5, color='gray', linestyle='dashed', ymin=-0.5, ymax=1)  # Linha divisória entre os anos
+    ax.axvline(x=11.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
+    ax.axvline(x=23.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
 
     # Ajustando os rótulos do eixo X
     ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
