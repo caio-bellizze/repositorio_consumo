@@ -98,8 +98,8 @@ if st.button("Calcular") and empresa_filtro:
     ax.grid(True, linestyle="--", alpha=0.5)
 
     # Adicionando texto extra entre os anos
-    ax.text(11.5, -5, f"Variação 2022 - 2023: {variacao_2022_2023:.2f}", fontsize=10, ha="center", color="red")
-    ax.text(23.5, -5, f"Variação 2023 - 2024: {variacao_2023_2024:.2f}", fontsize=10, ha="center", color="red")
+    ax.text(11.5, -5, f"Variação 2022 - 2023: {variacao_2022_2023:.2f}%", fontsize=10, ha="center", color="red")
+    ax.text(23.5, -5, f"Variação 2023 - 2024: {variacao_2023_2024:.2f}%", fontsize=10, ha="center", color="red")
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
