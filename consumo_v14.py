@@ -7,6 +7,7 @@ import openpyxl
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
+st.write("Selecione uma empresa, ajuste o limite de desvios padrões e defina o intervalo de datas.")
 
 # 🔹 Função para carregar os dados com cache
 @st.cache_data
@@ -24,8 +25,6 @@ empresa_filtro = st.selectbox("Selecione uma empresa", options=empresas, index=N
 
 # 🔹 Adicionar um slider para o número de MADs
 num_mad = st.slider("Escolha o número de desvios padrões para determinar os limites", min_value=1, max_value=5, value=2)
-
-year_distance = st.slider("Escolha a distância dos anos até o eixo X", min_value=-10.0, max_value=0.0, value=-5.0, step=0.1)
 
 # 🔹 Adicionar seleção de intervalo de datas
 df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
