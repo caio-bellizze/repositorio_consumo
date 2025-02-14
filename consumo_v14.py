@@ -63,6 +63,11 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
+    # Calcular o consumo total em MWh
+    consumo_mwh_2022 = df_empresa[df_empresa["Data"].dt.year == 2022]["Consumo Médio Total"].sum()
+    consumo_mwh_2023 = df_empresa[df_empresa["Data"].dt.year == 2023]["Consumo Médio Total"].sum()
+    consumo_mwh_2024 = (df_empresa[df_empresa["Data"].dt.year == 2024]["Consumo Médio Total"].sum())/1000000
+
     # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
     df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b-%y")
 
@@ -92,3 +97,6 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
+    st.write(consumo_mwh_2022)
+    st.write(consumo_mwh_2023)
+    st.write(consumo_mwh_2024)
