@@ -95,6 +95,10 @@ if st.button("Calcular") and empresa_filtro:
 
     ax.grid(True, linestyle="--", alpha=0.5)
 
+    # Adicionando texto extra entre os anos
+    ax.text(11.5, -6, "Período de Estabilidade", fontsize=10, ha="center", color="red")
+    ax.text(23.5, -6, "Aumento no Consumo", fontsize=10, ha="center", color="red")
+
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
     st.write(consumo_mwh_2022)
