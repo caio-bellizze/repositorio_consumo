@@ -81,7 +81,19 @@ if st.button("Calcular") and empresa_filtro:
     ax.axhline(y=limite_inferior, color="orange", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
-    ax.legend(title=f"Variação 2022-2023: {variacao_2022_2023:.2f}%", loc="lower left")
+
+    # Criar um box com informações adicionais no gráfico
+texto_legenda = (
+    f"Variação no consumo 2022-2023: {varicao_2022_2023:.2f}%\n"
+    f"Variação no consumo 2023-2024: {varicao_2023_2024:.2f}%\n")
+
+# Adicionando o box ao gráfico
+ax.text(
+    0.98, 0.98, texto_legenda, transform=ax.transAxes, fontsize=10,
+    verticalalignment='top', horizontalalignment='right',
+    bbox=dict(boxstyle="round,pad=0.5", edgecolor="black", facecolor="white")
+)
+
     
     # Adicionando linha divisória entre anos
     ax.axvline(x=11.5, color='gray', linestyle='dashed', ymin=-0.5, ymax=1)  # Linha divisória entre os anos
