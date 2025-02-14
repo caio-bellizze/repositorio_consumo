@@ -91,7 +91,7 @@ if st.button("Calcular") and empresa_filtro:
     ax.text(
     0.02, 0.02, texto_legenda, transform=ax.transAxes, fontsize=10,
     verticalalignment='bottom', horizontalalignment='left',
-    bbox=dict(boxstyle="square,pad=0.4", edgecolor="lightgray", facecolor="white", alpha=0.8))
+    bbox=dict(boxstyle="square,pad=0.4", edgecolor="lightgray", facecolor="white", alpha=0.9))
 
     
     # Adicionando linha divisória entre anos
@@ -106,12 +106,6 @@ if st.button("Calcular") and empresa_filtro:
     # Adicionando os anos abaixo do eixo X
     for i, ano in enumerate(["2022" , "2023", "2024"]):
         ax.text(i * 12 + 5.5, -4, ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
-
-    ax.grid(True, linestyle="--", alpha=0.5)
-
-    # Adicionando texto extra entre os anos
-    ax.text(11.5, -5, f"Variação 2022 - 2023: {variacao_2022_2023:.2f}%", fontsize=10, ha="center", color="red")
-    ax.text(23.5, -5, f"Variação 2023 - 2024: {variacao_2023_2024:.2f}%", fontsize=10, ha="center", color="red")
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
