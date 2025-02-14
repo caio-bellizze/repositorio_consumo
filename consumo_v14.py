@@ -80,7 +80,7 @@ if st.button("Calcular") and empresa_filtro:
     ax.axvline(x=23.5, color='gray', linestyle='dashed', ymin=-0.5, ymax=1)  # Linha divisória entre os anos
 
     # Ajustando os rótulos do eixo X
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=45)
+    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
     
