@@ -7,7 +7,6 @@ import openpyxl
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
-st.write("Selecione uma empresa, ajuste o limite de desvios padrões e defina o intervalo de datas.")
 
 # 🔹 Função para carregar os dados com cache
 @st.cache_data
@@ -104,10 +103,6 @@ if st.button("Calcular") and empresa_filtro:
     ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
-    
-    # Adicionando os anos abaixo do eixo X
-    for i, ano in enumerate(["2022" , "2023", "2024"]):
-        ax.text(i * 12 + 5.5, year_distance , ano, fontsize=12, ha="center", color="black")  # Y reduzido para afastar mais
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
