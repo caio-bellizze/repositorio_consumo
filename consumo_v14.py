@@ -89,9 +89,9 @@ if st.button("Calcular") and empresa_filtro:
 
     # Adicionando o box ao gráfico
     ax.text(
-    0.98, 0.98, texto_legenda, transform=ax.transAxes, fontsize=10,
+    0.02, 0.02, texto_legenda, transform=ax.transAxes, fontsize=10,
     verticalalignment='bottom', horizontalalignment='left',
-    bbox=dict(boxstyle="square,pad=0.5", edgecolor="lightgray", facecolor="white"))
+    bbox=dict(boxstyle="square,pad=0.4", edgecolor="lightgray", facecolor="white"))
 
     
     # Adicionando linha divisória entre anos
