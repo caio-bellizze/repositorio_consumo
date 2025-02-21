@@ -43,7 +43,10 @@ if st.button("Calcular") and empresa_filtro:
     
     df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M")
     df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.to_timestamp(how="start")
+    
+    # Verificar se a coluna "Ano_Mes" foi criada corretamente
+    if "Ano_Mes" not in df_mensal.columns:
+        raise ValueError("A coluna 'Ano_Mes' não foi criada corretamente.")
 
     # 🔹 Cálculo do Modified Z-score
     mediana_consumo = np.median(df_mensal["Consumo Médio Total"])
@@ -101,7 +104,7 @@ if st.button("Calcular") and empresa_filtro:
     plt.tight_layout()
 
     # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b-%y")
+    df_mensal["Ano_Mes"] = df_mensal.index.strftime("%b-%y")
 
     # 🔹 Criar gráfico de consumo mensal
     fig, ax = plt.subplots(figsize=(12, 6))
