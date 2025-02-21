@@ -28,31 +28,22 @@ empresa_filtro = st.selectbox("Selecione uma empresa", options=empresas, index=N
 num_mad = st.slider("Escolha o número de desvios padrões para determinar os limites", min_value=1, max_value=5, value=2)
 
 # 🔹 Adicionar seleção de intervalo de datas
-df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
+df["Data"] = pd.to_datetime(df["Data"], errors="coerce")  # Garantir que datas inválidas sejam convertidas para NaT
 data_inicio = st.date_input("Data Inicial", value=pd.to_datetime("2022-01-01"))
 data_fim = st.date_input("Data Final", value=pd.to_datetime("2024-12-31"))
 
 # 🔹 Criar botão para gerar o gráfico
 if st.button("Calcular") and empresa_filtro:
     df_empresa = df[df["NOME_EMPRESARIAL"] == empresa_filtro].copy()
-    df_empresa.dropna(subset=["Data"], inplace=True)
+    df_empresa.dropna(subset=["Data"], inplace=True)  # Remover linhas com datas inválidas
     
     # 🔹 Aplicar filtro de datas
     df_empresa = df_empresa[(df_empresa["Data"] >= pd.to_datetime(data_inicio)) & 
                              (df_empresa["Data"] <= pd.to_datetime(data_fim))]
-
-    # 🔹 Adicionar a coluna 'Ano_Mes' após o filtro de datas
+    
     df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M")
-
-    # 🔹 Agrupar os dados mensais
     df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
-
-    # 🔹 Verificar se a coluna 'Ano_Mes' foi criada corretamente
-    if 'Ano_Mes' not in df_mensal.columns:
-        st.error("A coluna 'Ano_Mes' não foi criada corretamente.")
-    else:
-        # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-        df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b-%y")
+    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.to_timestamp(how="start")
 
     # 🔹 Cálculo do Modified Z-score
     mediana_consumo = np.median(df_mensal["Consumo Médio Total"])
@@ -80,18 +71,39 @@ if st.button("Calcular") and empresa_filtro:
     variacao_2022_2023 = ( consumo_mwh_2023 - consumo_mwh_2022 ) / consumo_mwh_2022 * 100
     variacao_2023_2024 = ( consumo_mwh_2024 - consumo_mwh_2023 ) / consumo_mwh_2023 * 100
 
-    # 🔹 Análise de Sazonalidade - Decomposição da série temporal
+    # 🔹 Análise de sazonalidade
     df_mensal.set_index('Ano_Mes', inplace=True)
-    df_mensal.index = pd.to_datetime(df_mensal.index.astype(str))  # Convertendo para datetime
-    decomposicao = seasonal_decompose(df_mensal["Consumo Médio Total"], model='multiplicative', period=12)  # Período mensal
-    
-    # Plotando a decomposição sazonal
-    fig, ax = plt.subplots(figsize=(12, 6))
-    decomposicao.plot(ax=ax)
-    plt.suptitle("Decomposição Sazonal do Consumo de Energia", fontsize=16)
-    st.pyplot(fig)
+    df_mensal.index = pd.to_datetime(df_mensal.index.astype(str), errors="coerce")  # Garantir que a conversão para datetime não cause erro
+    df_mensal = df_mensal.dropna(subset=["Ano_Mes"])
 
-    # 🔹 Criar gráfico de consumo
+    # Decomposição sazonal
+    resultado_decomposicao = seasonal_decompose(df_mensal["Consumo Médio Total"], model='additive', period=12)
+    
+    # 🔹 Criar gráfico de decomposição
+    fig, axes = plt.subplots(4, 1, figsize=(12, 10), sharex=True)
+    
+    axes[0].plot(df_mensal.index, df_mensal["Consumo Médio Total"], label="Consumo Médio Total")
+    axes[0].set_title("Consumo Médio Total")
+    axes[0].legend()
+
+    axes[1].plot(resultado_decomposicao.trend, label="Tendência", color="orange")
+    axes[1].set_title("Componente de Tendência")
+    axes[1].legend()
+
+    axes[2].plot(resultado_decomposicao.seasonal, label="Sazonalidade", color="green")
+    axes[2].set_title("Componente Sazonal")
+    axes[2].legend()
+
+    axes[3].plot(resultado_decomposicao.resid, label="Resíduos", color="red")
+    axes[3].set_title("Componente Residual")
+    axes[3].legend()
+
+    plt.tight_layout()
+
+    # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
+    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b-%y")
+
+    # 🔹 Criar gráfico de consumo mensal
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
@@ -120,6 +132,7 @@ if st.button("Calcular") and empresa_filtro:
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
 
-    # 🔹 Exibir gráfico no Streamlit
+    # 🔹 Exibir gráficos no Streamlit
     st.pyplot(fig)
+    st.pyplot(fig)  # Exibir gráfico de decomposição sazonal
 
