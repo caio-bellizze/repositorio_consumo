@@ -88,18 +88,22 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Criar gráfico de decomposição
     fig, axes = plt.subplots(4, 1, figsize=(12, 10), sharex=True)
     
+    # Gráfico de consumo mensal
     axes[0].plot(df_mensal.index, df_mensal["Consumo Médio Total"], label="Consumo Médio Total")
     axes[0].set_title("Consumo Médio Total")
     axes[0].legend()
 
+    # Componente de tendência
     axes[1].plot(resultado_decomposicao.trend, label="Tendência", color="orange")
     axes[1].set_title("Componente de Tendência")
     axes[1].legend()
 
+    # Componente sazonal em %
     axes[2].plot(sazonalidade_percentual, label="Sazonalidade (%)", color="green")
     axes[2].set_title("Componente Sazonal em %")
     axes[2].legend()
 
+    # Componente residual
     axes[3].plot(resultado_decomposicao.resid, label="Resíduos", color="red")
     axes[3].set_title("Componente Residual")
     axes[3].legend()
@@ -110,7 +114,7 @@ if st.button("Calcular") and empresa_filtro:
     df_mensal["Ano_Mes"] = df_mensal.index.strftime("%b-%y")
 
     # 🔹 Criar gráfico de consumo mensal
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig2, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="orangered", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
@@ -139,5 +143,5 @@ if st.button("Calcular") and empresa_filtro:
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
 
     # 🔹 Exibir gráficos no Streamlit
-    st.pyplot(fig)
-    st.pyplot(fig)  # Exibir gráfico de decomposição sazonal
+    st.pyplot(fig)  # Gráfico de decomposição
+    st.pyplot(fig2)  # Gráfico de consumo mensal
