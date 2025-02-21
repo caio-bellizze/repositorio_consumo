@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
 import openpyxl
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -13,6 +14,17 @@ st.write("Selecione uma empresa, ajuste o limite de desvios padrões e defina o 
 @st.cache_data
 def carregar_dados(arquivo, planilha):
     return pd.read_excel(arquivo, sheet_name=planilha, engine="openpyxl")
+
+# 🔹 Realizar a decomposição da série temporal
+def decompor_sazonalidade(df_mensal):
+    # Decompor a série temporal (ajustando para um período de 12 meses se for mensal)
+    decomposicao = seasonal_decompose(df_mensal["Consumo Médio Total"], model='additive', period=12)
+    
+    # Plotar os componentes (opcional)
+    decomposicao.plot()
+    plt.show()
+    
+    return decomposicao
 
 # 🔹 Ler os dados
 arquivo = "base_de_dados_filtrada_v3.xlsx"
@@ -43,6 +55,21 @@ if st.button("Calcular") and empresa_filtro:
     df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M")
     df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
     df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.to_timestamp(how="start")
+    
+    # 🔹 Decompor a série para analisar a sazonalidade
+    decomposicao = decompor_sazonalidade(df_mensal)
+    
+    # 🔹 Obter o componente sazonal
+    sazonalidade = decomposicao.seasonal
+    tendencia = decomposicao.trend
+
+    # 🔹 Calcular a média da sazonalidade
+    media_sazonal = sazonalidade.mean()
+
+    # 🔹 Prever o consumo baseado na sazonalidade e tendência ajustada
+    previsao_sazonal = sazonalidade.tail(12)  # últimos 12 meses ou conforme a previsão
+    
+    previsao_consumo = media_sazonal + tendencia.tail(12).mean()  # Ajustando com a tendência
 
     # 🔹 Cálculo do Modified Z-score
     mediana_consumo = np.median(df_mensal["Consumo Médio Total"])
@@ -63,22 +90,47 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
+    # Calcular o consumo total em MWh e suas variações
+    consumo_mwh_2022 = df_empresa[df_empresa["Data"].dt.year == 2022]["CONSUMO_TOTAL"].sum()
+    consumo_mwh_2023 = df_empresa[df_empresa["Data"].dt.year == 2023]["CONSUMO_TOTAL"].sum()
+    consumo_mwh_2024 = (df_empresa[df_empresa["Data"].dt.year == 2024]["CONSUMO_TOTAL"].sum())/1000000
+    variacao_2022_2023 = ( consumo_mwh_2023 - consumo_mwh_2022 ) / consumo_mwh_2022 * 100
+    variacao_2023_2024 = ( consumo_mwh_2024 - consumo_mwh_2023 ) / consumo_mwh_2023 * 100
+
     # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%Y.%m")
+    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b-%y")
 
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.7, label="Consumo Mensal", width=0.5)
+    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
-    ax.axhline(y=limite_superior, color="red", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
-    ax.axhline(y=limite_inferior, color="red", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
+    ax.axhline(y=limite_superior, color="orangered", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
+    ax.axhline(y=limite_inferior, color="orangered", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=90)
-    ax.set_xlabel("Data")
+
+    # Criar um box com informações adicionais no gráfico
+    texto_legenda = (
+    f"Variação no consumo 2022-2023: {variacao_2022_2023:.2f}%\n"
+    f"Variação no consumo 2023-2024: {variacao_2023_2024:.2f}%")
+
+    # Adicionando o box ao gráfico
+    ax.text(
+    0.02, 0.02, texto_legenda, transform=ax.transAxes, fontsize=10,
+    verticalalignment='bottom', horizontalalignment='left',
+    bbox=dict(boxstyle="square,pad=0.4", edgecolor="lightgray", facecolor="white", alpha=0.9))
+
+    # Adicionando linha divisória entre anos
+    ax.axvline(x=11.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
+    ax.axvline(x=23.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
+
+    # Ajustando os rótulos do eixo X
+    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
     ax.set_ylabel("Consumo Médio Total")
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
-    ax.grid(True, linestyle="--", alpha=0.5)
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
+
+    # 🔹 Exibir consumo sugerido para o contrato (baseado na sazonalidade)
+    st.write(f"Consumo sugerido para o contrato (baseado na sazonalidade): {previsao_consumo:.2f} kWh")
