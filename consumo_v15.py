@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
 import openpyxl
-from statsmodels.tsa.seasonal import seasonal_decompose
+import statsmodels.api as sm
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -14,17 +14,6 @@ st.write("Selecione uma empresa, ajuste o limite de desvios padrões e defina o 
 @st.cache_data
 def carregar_dados(arquivo, planilha):
     return pd.read_excel(arquivo, sheet_name=planilha, engine="openpyxl")
-
-# 🔹 Realizar a decomposição da série temporal
-def decompor_sazonalidade(df_mensal):
-    # Decompor a série temporal (ajustando para um período de 12 meses se for mensal)
-    decomposicao = seasonal_decompose(df_mensal["Consumo Médio Total"], model='additive', period=12)
-    
-    # Plotar os componentes (opcional)
-    decomposicao.plot()
-    plt.show()
-    
-    return decomposicao
 
 # 🔹 Ler os dados
 arquivo = "base_de_dados_filtrada_v3.xlsx"
@@ -55,21 +44,6 @@ if st.button("Calcular") and empresa_filtro:
     df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M")
     df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
     df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.to_timestamp(how="start")
-    
-    # 🔹 Decompor a série para analisar a sazonalidade
-    decomposicao = decompor_sazonalidade(df_mensal)
-    
-    # 🔹 Obter o componente sazonal
-    sazonalidade = decomposicao.seasonal
-    tendencia = decomposicao.trend
-
-    # 🔹 Calcular a média da sazonalidade
-    media_sazonal = sazonalidade.mean()
-
-    # 🔹 Prever o consumo baseado na sazonalidade e tendência ajustada
-    previsao_sazonal = sazonalidade.tail(12)  # últimos 12 meses ou conforme a previsão
-    
-    previsao_consumo = media_sazonal + tendencia.tail(12).mean()  # Ajustando com a tendência
 
     # 🔹 Cálculo do Modified Z-score
     mediana_consumo = np.median(df_mensal["Consumo Médio Total"])
@@ -84,18 +58,29 @@ if st.button("Calcular") and empresa_filtro:
                              (df_mensal["Consumo Médio Total"] <= limite_superior)].copy()
     df_filtrado["Distancia_Media"] = np.abs(df_filtrado["Consumo Médio Total"] - mediana_consumo)
 
-    # 🔹 Cálculo da flexibilidade estimada
+    # 🔹 Cálculo da flexibilidade estimada (variação percentual)
     flexibilidade_estimativa = (df_filtrado["Distancia_Media"].mean() + num_mad * mad) / mediana_consumo * 100
 
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
+    # 🔹 Decomposição sazonal usando statsmodels
+    df_mensal.set_index("Ano_Mes", inplace=True)
+    decomposicao = sm.tsa.seasonal_decompose(df_mensal["Consumo Médio Total"], model="multiplicative", period=12)
+    
+    # Extraindo o componente sazonal
+    sazonalidade = decomposicao.seasonal
+    sazonalidade_percentual = (sazonalidade - 1) * 100  # Variação percentual (+/- %)
+
+    # 🔹 Cálculo da sazonalidade média anual
+    sazonalidade_media = sazonalidade_percentual.mean()
+
     # Calcular o consumo total em MWh e suas variações
     consumo_mwh_2022 = df_empresa[df_empresa["Data"].dt.year == 2022]["CONSUMO_TOTAL"].sum()
     consumo_mwh_2023 = df_empresa[df_empresa["Data"].dt.year == 2023]["CONSUMO_TOTAL"].sum()
     consumo_mwh_2024 = (df_empresa[df_empresa["Data"].dt.year == 2024]["CONSUMO_TOTAL"].sum())/1000000
-    variacao_2022_2023 = ( consumo_mwh_2023 - consumo_mwh_2022 ) / consumo_mwh_2022 * 100
-    variacao_2023_2024 = ( consumo_mwh_2024 - consumo_mwh_2023 ) / consumo_mwh_2023 * 100
+    variacao_2022_2023 = (consumo_mwh_2023 - consumo_mwh_2022) / consumo_mwh_2022 * 100
+    variacao_2023_2024 = (consumo_mwh_2024 - consumo_mwh_2023) / consumo_mwh_2023 * 100
 
     # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
     df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b-%y")
@@ -112,7 +97,8 @@ if st.button("Calcular") and empresa_filtro:
     # Criar um box com informações adicionais no gráfico
     texto_legenda = (
     f"Variação no consumo 2022-2023: {variacao_2022_2023:.2f}%\n"
-    f"Variação no consumo 2023-2024: {variacao_2023_2024:.2f}%")
+    f"Variação no consumo 2023-2024: {variacao_2023_2024:.2f}%\n"
+    f"Sazonalidade Média: {sazonalidade_media:.2f}%")
 
     # Adicionando o box ao gráfico
     ax.text(
@@ -131,6 +117,3 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
-
-    # 🔹 Exibir consumo sugerido para o contrato (baseado na sazonalidade)
-    st.write(f"Consumo sugerido para o contrato (baseado na sazonalidade): {previsao_consumo:.2f} kWh")
