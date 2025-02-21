@@ -82,6 +82,9 @@ if st.button("Calcular") and empresa_filtro:
     # Decomposição sazonal
     resultado_decomposicao = seasonal_decompose(df_mensal["Consumo Médio Total"], model='additive', period=12)
     
+    # 🔹 Calcular sazonalidade em % em relação ao consumo médio
+    sazonalidade_percentual = (resultado_decomposicao.seasonal / np.mean(resultado_decomposicao.seasonal)) * 100
+
     # 🔹 Criar gráfico de decomposição
     fig, axes = plt.subplots(4, 1, figsize=(12, 10), sharex=True)
     
@@ -93,8 +96,8 @@ if st.button("Calcular") and empresa_filtro:
     axes[1].set_title("Componente de Tendência")
     axes[1].legend()
 
-    axes[2].plot(resultado_decomposicao.seasonal, label="Sazonalidade", color="green")
-    axes[2].set_title("Componente Sazonal")
+    axes[2].plot(sazonalidade_percentual, label="Sazonalidade (%)", color="green")
+    axes[2].set_title("Componente Sazonal em %")
     axes[2].legend()
 
     axes[3].plot(resultado_decomposicao.resid, label="Resíduos", color="red")
