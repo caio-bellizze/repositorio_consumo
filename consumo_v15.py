@@ -74,7 +74,7 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Análise de sazonalidade
     df_mensal.set_index('Ano_Mes', inplace=True)
     df_mensal.index = pd.to_datetime(df_mensal.index.astype(str), errors="coerce")  # Garantir que a conversão para datetime não cause erro
-    df_mensal = df_mensal.dropna(subset=["Ano_Mes"])
+    df_mensal = df_mensal.dropna(subset=["Consumo Médio Total"])  # Garantir que só linhas com dados de consumo sejam analisadas
 
     # Decomposição sazonal
     resultado_decomposicao = seasonal_decompose(df_mensal["Consumo Médio Total"], model='additive', period=12)
@@ -135,4 +135,3 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Exibir gráficos no Streamlit
     st.pyplot(fig)
     st.pyplot(fig)  # Exibir gráfico de decomposição sazonal
-
