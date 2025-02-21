@@ -86,33 +86,27 @@ if st.button("Calcular") and empresa_filtro:
     variacao_2022_2023 = (consumo_mwh_2023 - consumo_mwh_2022) / consumo_mwh_2022 * 100
     variacao_2023_2024 = (consumo_mwh_2024 - consumo_mwh_2023) / consumo_mwh_2023 * 100
 
-    # 🔹 Criar gráfico de consumo e sazonalidade
-    fig, ax = plt.subplots(figsize=(12, 6))
+    # 🔹 Criar gráfico de Consumo
+    fig1, ax1 = plt.subplots(figsize=(12, 6))
+    ax1.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
+    ax1.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
+    ax1.axhline(y=limite_superior, color="orangered", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
+    ax1.axhline(y=limite_inferior, color="orangered", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
+    ax1.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
+    ax1.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
+    ax1.set_ylabel("Consumo Médio Total")
+    ax1.set_title(f"Consumo Histórico - {empresa_filtro}")
     
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
-    ax.plot(df_mensal["Ano_Mes"], sazonalidade_percentual, color="orange", label="Índice de Sazonalidade (%)", marker='o', linestyle='--')
+    # Exibir gráfico de consumo no Streamlit
+    st.pyplot(fig1)
 
-    ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
-    ax.axhline(y=limite_superior, color="orangered", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
-    ax.axhline(y=limite_inferior, color="orangered", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
+    # 🔹 Criar gráfico de Sazonalidade
+    fig2, ax2 = plt.subplots(figsize=(12, 6))
+    ax2.plot(df_mensal["Ano_Mes"], sazonalidade_percentual, color="orange", label="Índice de Sazonalidade (%)", marker='o', linestyle='--')
+    ax2.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
+    ax2.set_ylabel("Sazonalidade (%)")
+    ax2.set_title(f"Sazonalidade do Consumo - {empresa_filtro}")
+    ax2.legend()
     
-    ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
-
-    # Criar um box com informações adicionais no gráfico
-    texto_legenda = (
-    f"Variação no consumo 2022-2023: {variacao_2022_2023:.2f}%\n"
-    f"Variação no consumo 2023-2024: {variacao_2023_2024:.2f}%")
-
-    # Adicionando o box ao gráfico
-    ax.text(
-    0.02, 0.02, texto_legenda, transform=ax.transAxes, fontsize=10,
-    verticalalignment='bottom', horizontalalignment='left',
-    bbox=dict(boxstyle="square,pad=0.4", edgecolor="lightgray", facecolor="white", alpha=0.9))
-
-    # Ajustando os rótulos do eixo X
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
-    ax.set_ylabel("Consumo Médio Total")
-    ax.set_title(f"Consumo Histórico - {empresa_filtro}")
-
-    # 🔹 Exibir gráfico no Streamlit
-    st.pyplot(fig)
+    # Exibir gráfico de sazonalidade no Streamlit
+    st.pyplot(fig2)
