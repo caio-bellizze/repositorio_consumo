@@ -93,7 +93,6 @@ if st.button("Calcular") and empresa_filtro:
     verticalalignment='bottom', horizontalalignment='left',
     bbox=dict(boxstyle="square,pad=0.4", edgecolor="lightgray", facecolor="white", alpha=0.9))
 
-    
     # Adicionando linha divisória entre anos
     ax.axvline(x=11.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
     ax.axvline(x=23.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
@@ -104,54 +103,51 @@ if st.button("Calcular") and empresa_filtro:
     ax.set_title(f"Consumo Histórico - {empresa_filtro}")
 
     # 🔹 Exibir gráfico no Streamlit
-    st.pyplot(fig)
+    st.pyplot(fig)  # Exibe o gráfico
 
-    # 🔹 Função para buscar as informações específicas (Unidades, CNPJ, Cidade, Estado, Ramo e Consumo)
+    # 🔹 Função para buscar informações adicionais
     def buscar_informacoes(df_empresa):
-        # 1. Unidades (filtro da empresa, depois formula ÚNICO e PROCX)
-        cnpjs_unicos = df_empresa["CNPJ_CARGA"].dropna().unique()
-        
-        # 2. CNPJs encontrados
-        cnpjs_encontrados = list(cnpjs_unicos)
-
-        # 🔹 Filtrando dados apenas para o último mês disponível
+        df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M")
         ultimo_mes = df_empresa["Ano_Mes"].max()
-        df_empresa_recente = df_empresa[df_empresa["Ano_Mes"] == ultimo_mes]
+        df_empresa_ultimo_mes = df_empresa[df_empresa["Ano_Mes"] == ultimo_mes]
 
-        # 3. Cidades e Estados para cada CNPJ (garantir que o estado não seja duplicado)
-        cidades = df_empresa_recente[df_empresa_recente["CNPJ_CARGA"].isin(cnpjs_encontrados)]["CIDADE"].unique()
-        estados = df_empresa_recente[df_empresa_recente["CNPJ_CARGA"].isin(cnpjs_encontrados)]["ESTADO_UF"].unique()
-
-        # 4. Ramo de Atividade
-        ramo_atividade = df_empresa_recente[df_empresa_recente["CNPJ_CARGA"].isin(cnpjs_encontrados)]["RAMO_ATIVIDADE"].unique()
-
-        # 5. Consumo Médio Total do Mês mais recente
-        consumo_medio_total = df_empresa_recente.groupby("CNPJ_CARGA")["Consumo Médio Total"].sum().reset_index()
-
-        # 🔹 Criar DataFrame com as informações para cada CNPJ único
-        dados_tabela = []
-        for cnpj in cnpjs_encontrados:
-            unidades = ', '.join(df_empresa_recente[df_empresa_recente["CNPJ_CARGA"] == cnpj]["SIGLA_PARCELA_CARGA"].unique())
-            cidade = ', '.join(df_empresa_recente[df_empresa_recente["CNPJ_CARGA"] == cnpj]["CIDADE"].unique())
-            estado = ', '.join(set(df_empresa_recente[df_empresa_recente["CNPJ_CARGA"] == cnpj]["ESTADO_UF"].unique()))  # Garantir que o estado não seja duplicado
-            ramo = ', '.join(df_empresa_recente[df_empresa_recente["CNPJ_CARGA"] == cnpj]["RAMO_ATIVIDADE"].unique())
-            carga = consumo_medio_total[consumo_medio_total["CNPJ_CARGA"] == cnpj]["Consumo Médio Total"].values[0]
-            
-            # Formatar CNPJ com verificação
-            cnpj = str(cnpj)  # Garantir que seja uma string
-            if len(cnpj) == 14:
-                cnpj_formatado = f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:14]}"
-            else:
-                cnpj_formatado = cnpj  # Se não for o tamanho correto, deixar sem formatação
-            
-            dados_tabela.append([cnpj_formatado, unidades, cidade, estado, ramo, carga])
-
-        # Organizar dados em DataFrame
-        tabela_informacoes = pd.DataFrame(dados_tabela, columns=["CNPJ", "Unidades", "Cidade", "Estado", "Ramo", "Carga"])
-        tabela_informacoes.set_index('CNPJ', inplace=True)
+        # Buscar os CNPJs únicos
+        cnpjs = df_empresa_ultimo_mes["CNPJ_CARGA"].unique()
         
-        return tabela_informacoes
+        # Buscar as cidades e estados para cada CNPJ
+        tabela = []
+        for cnpj in cnpjs:
+            dados_cnpj = df_empresa_ultimo_mes[df_empresa_ultimo_mes["CNPJ_CARGA"] == cnpj].iloc[0]
+            
+            # Formatar o CNPJ
+            cnpj_formatado = f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:14]}" if len(str(cnpj)) == 14 else cnpj
 
-    # 🔹 Gerar a tabela de informações
+            # Adicionar informações à tabela
+            tabela.append({
+                "CNPJ": cnpj_formatado,
+                "Unidades": df_empresa_ultimo_mes[df_empresa_ultimo_mes["CNPJ_CARGA"] == cnpj].shape[0],
+                "Cidade": dados_cnpj["CIDADE"],
+                "Estado": dados_cnpj["ESTADO_UF"],
+                "Ramo": dados_cnpj["RAMO_ATIVIDADE"],
+                "Carga": dados_cnpj["Consumo Médio Total"]
+            })
+
+        tabela_df = pd.DataFrame(tabela)
+
+        # Destacar a Matriz ou menor CNPJ
+        tabela_df["Destacar"] = tabela_df["CNPJ"].apply(lambda x: 'Matriz' if '0001' in x else '')
+        tabela_df = tabela_df.sort_values(by="CNPJ", ascending=False)
+        tabela_df["Destacar"] = tabela_df["Destacar"].apply(lambda x: 'Matriz' if x == 'Matriz' else '')
+        
+        return tabela_df.drop(columns=["Destacar"])
+
     tabela = buscar_informacoes(df_empresa)
-    st.write("Informações adicionais:", tabela)
+
+    # Exibir a tabela
+    tabela_styled = tabela.style.apply(
+        lambda x: ['background-color: yellow' if val == 'Matriz' else '' for val in x['Destacar']],
+        axis=1
+    ).hide_columns(["Destacar"])
+
+    st.write("Informações das Cargas da Empresa:")
+    st.dataframe(tabela_styled)  # Exibe a tabela após o gráfico
