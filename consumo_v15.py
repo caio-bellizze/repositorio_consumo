@@ -135,6 +135,7 @@ if st.button("Calcular") and empresa_filtro:
             carga = consumo_medio_total[consumo_medio_total["CNPJ_CARGA"] == cnpj]["Consumo Médio Total"].values[0]
             
             # Formatar CNPJ com verificação
+            cnpj = str(cnpj)  # Garantir que seja uma string
             if len(cnpj) == 14:
                 cnpj_formatado = f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:14]}"
             else:
@@ -151,3 +152,4 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Gerar a tabela de informações
     tabela = buscar_informacoes(df_empresa)
     st.write("Informações adicionais:", tabela)
+
