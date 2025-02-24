@@ -114,24 +114,27 @@ if st.button("Calcular") and empresa_filtro:
         # 2. CNPJs encontrados
         cnpjs_encontrados = list(cnpjs_unicos)
 
-        # 3. Cidades e Estados para cada CNPJ
-        cidades = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["CIDADE"].unique()
-        estados = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["ESTADO_UF"].unique()
+        # 🔹 Filtrando dados apenas para o último mês disponível
+        ultimo_mes = df_empresa["Ano_Mes"].max()
+        df_empresa_recente = df_empresa[df_empresa["Ano_Mes"] == ultimo_mes]
+
+        # 3. Cidades e Estados para cada CNPJ (garantir que o estado não seja duplicado)
+        cidades = df_empresa_recente[df_empresa_recente["CNPJ_CARGA"].isin(cnpjs_encontrados)]["CIDADE"].unique()
+        estados = df_empresa_recente[df_empresa_recente["CNPJ_CARGA"].isin(cnpjs_encontrados)]["ESTADO_UF"].unique()
 
         # 4. Ramo de Atividade
-        ramo_atividade = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["RAMO_ATIVIDADE"].unique()
+        ramo_atividade = df_empresa_recente[df_empresa_recente["CNPJ_CARGA"].isin(cnpjs_encontrados)]["RAMO_ATIVIDADE"].unique()
 
         # 5. Consumo Médio Total do Mês mais recente
-        df_empresa_recente = df_empresa[df_empresa["Ano_Mes"] == df_empresa["Ano_Mes"].max()]
         consumo_medio_total = df_empresa_recente.groupby("CNPJ_CARGA")["Consumo Médio Total"].sum().reset_index()
 
         # 🔹 Criar DataFrame com as informações para cada CNPJ único
         dados_tabela = []
         for cnpj in cnpjs_encontrados:
-            unidades = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["SIGLA_PARCELA_CARGA"].unique())
-            cidade = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["CIDADE"].unique())
-            estado = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["ESTADO_UF"].unique())
-            ramo = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["RAMO_ATIVIDADE"].unique())
+            unidades = ', '.join(df_empresa_recente[df_empresa_recente["CNPJ_CARGA"] == cnpj]["SIGLA_PARCELA_CARGA"].unique())
+            cidade = ', '.join(df_empresa_recente[df_empresa_recente["CNPJ_CARGA"] == cnpj]["CIDADE"].unique())
+            estado = ', '.join(set(df_empresa_recente[df_empresa_recente["CNPJ_CARGA"] == cnpj]["ESTADO_UF"].unique()))  # Garantir que o estado não seja duplicado
+            ramo = ', '.join(df_empresa_recente[df_empresa_recente["CNPJ_CARGA"] == cnpj]["RAMO_ATIVIDADE"].unique())
             carga = consumo_medio_total[consumo_medio_total["CNPJ_CARGA"] == cnpj]["Consumo Médio Total"].values[0]
             
             # Formatar CNPJ com verificação
@@ -152,4 +155,3 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Gerar a tabela de informações
     tabela = buscar_informacoes(df_empresa)
     st.write("Informações adicionais:", tabela)
-
