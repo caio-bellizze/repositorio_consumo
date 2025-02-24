@@ -134,8 +134,11 @@ if st.button("Calcular") and empresa_filtro:
             ramo = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["RAMO_ATIVIDADE"].unique())
             carga = consumo_medio_total[consumo_medio_total["CNPJ_CARGA"] == cnpj]["Consumo Médio Total"].values[0]
             
-            # Formatar CNPJ
-            cnpj_formatado = f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:14]}"
+            # Formatar CNPJ com verificação
+            if len(cnpj) == 14:
+                cnpj_formatado = f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:14]}"
+            else:
+                cnpj_formatado = cnpj  # Se não for o tamanho correto, deixar sem formatação
             
             dados_tabela.append([cnpj_formatado, unidades, cidade, estado, ramo, carga])
 
