@@ -134,10 +134,14 @@ if st.button("Calcular") and empresa_filtro:
             ramo = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["RAMO_ATIVIDADE"].unique())
             carga = consumo_medio_total[consumo_medio_total["CNPJ_CARGA"] == cnpj]["Consumo Médio Total"].values[0]
             
-            dados_tabela.append([cnpj, unidades, cidade, estado, ramo, carga])
+            # Formatar CNPJ
+            cnpj_formatado = f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:14]}"
+            
+            dados_tabela.append([cnpj_formatado, unidades, cidade, estado, ramo, carga])
 
         # Organizar dados em DataFrame
         tabela_informacoes = pd.DataFrame(dados_tabela, columns=["CNPJ", "Unidades", "Cidade", "Estado", "Ramo", "Carga"])
+        tabela_informacoes.set_index('CNPJ', inplace=True)
         
         return tabela_informacoes
 
