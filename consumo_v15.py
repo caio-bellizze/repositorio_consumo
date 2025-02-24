@@ -14,40 +14,6 @@ st.write("Selecione uma empresa, ajuste o limite de desvios padrões e defina o 
 def carregar_dados(arquivo, planilha):
     return pd.read_excel(arquivo, sheet_name=planilha, engine="openpyxl")
 
-# 🔹 Função para buscar as informações específicas (Unidades, CNPJ, Cidade, Estado, Ramo e Consumo)
-def buscar_informacoes(df_empresa):
-    # 1. Unidades (filtro da empresa, depois formula ÚNICO e PROCX)
-    cnpjs_unicos = df_empresa["CNPJ_CARGA"].dropna().unique()
-    unidades = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_unicos)]["SIGLA_PARCELA_CARGA"].unique()
-
-    # 2. CNPJs encontrados
-    cnpjs_encontrados = list(cnpjs_unicos)
-
-    # 3. Cidades para cada CNPJ
-    cidades = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["CIDADE"].unique()
-
-    # 4. Estados para cada CNPJ
-    estados = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["ESTADO_UF"].unique()
-
-    # 5. Ramo de Atividade
-    ramo_atividade = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["RAMO_ATIVIDADE"].unique()
-
-    # 6. Consumo Médio Total do Mês mais recente
-    df_empresa_recente = df_empresa[df_empresa["Ano_Mes"] == df_empresa["Ano_Mes"].max()]
-    consumo_medio_total = df_empresa_recente["Consumo Médio Total"].sum()
-
-    # Organizando as informações em um DataFrame
-    dados_tabela = pd.DataFrame({
-        "CNPJ": cnpjs_encontrados,
-        "Unidades": [', '.join(unidades)] * len(cnpjs_encontrados),
-        "Cidade": [', '.join(cidades)] * len(cnpjs_encontrados),
-        "Estado": [', '.join(estados)] * len(cnpjs_encontrados),
-        "Ramo": [', '.join(ramo_atividade)] * len(cnpjs_encontrados),
-        "Carga": [consumo_medio_total] * len(cnpjs_encontrados)
-    })
-    
-    return dados_tabela
-
 # 🔹 Ler os dados
 arquivo = "base_de_dados_filtrada_v3.xlsx"
 planilha = "base_de_dados"
@@ -140,9 +106,41 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
 
-    # 🔹 Buscar as informações específicas da tabela
-    tabela_informacoes = buscar_informacoes(df_empresa)
-    
-    # 🔹 Exibir a tabela abaixo do gráfico
-    st.write("Informações adicionais sobre o consumo:")
-    st.dataframe(tabela_informacoes)
+    # 🔹 Função para buscar as informações específicas (Unidades, CNPJ, Cidade, Estado, Ramo e Consumo)
+    def buscar_informacoes(df_empresa):
+        # 1. Unidades (filtro da empresa, depois formula ÚNICO e PROCX)
+        cnpjs_unicos = df_empresa["CNPJ_CARGA"].dropna().unique()
+        
+        # 2. CNPJs encontrados
+        cnpjs_encontrados = list(cnpjs_unicos)
+
+        # 3. Cidades e Estados para cada CNPJ
+        cidades = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["CIDADE"].unique()
+        estados = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["ESTADO_UF"].unique()
+
+        # 4. Ramo de Atividade
+        ramo_atividade = df_empresa[df_empresa["CNPJ_CARGA"].isin(cnpjs_encontrados)]["RAMO_ATIVIDADE"].unique()
+
+        # 5. Consumo Médio Total do Mês mais recente
+        df_empresa_recente = df_empresa[df_empresa["Ano_Mes"] == df_empresa["Ano_Mes"].max()]
+        consumo_medio_total = df_empresa_recente.groupby("CNPJ_CARGA")["Consumo Médio Total"].sum().reset_index()
+
+        # 🔹 Criar DataFrame com as informações para cada CNPJ único
+        dados_tabela = []
+        for cnpj in cnpjs_encontrados:
+            unidades = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["SIGLA_PARCELA_CARGA"].unique())
+            cidade = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["CIDADE"].unique())
+            estado = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["ESTADO_UF"].unique())
+            ramo = ', '.join(df_empresa[df_empresa["CNPJ_CARGA"] == cnpj]["RAMO_ATIVIDADE"].unique())
+            carga = consumo_medio_total[consumo_medio_total["CNPJ_CARGA"] == cnpj]["Consumo Médio Total"].values[0]
+            
+            dados_tabela.append([cnpj, unidades, cidade, estado, ramo, carga])
+
+        # Organizar dados em DataFrame
+        tabela_informacoes = pd.DataFrame(dados_tabela, columns=["CNPJ", "Unidades", "Cidade", "Estado", "Ramo", "Carga"])
+        
+        return tabela_informacoes
+
+    # 🔹 Gerar a tabela de informações
+    tabela = buscar_informacoes(df_empresa)
+    st.write("Informações adicionais:", tabela)
