@@ -63,24 +63,50 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
+    # Calcular o consumo total em MWh e suas variações
+    consumo_mwh_2022 = df_empresa[df_empresa["Data"].dt.year == 2022]["CONSUMO_TOTAL"].sum()
+    consumo_mwh_2023 = df_empresa[df_empresa["Data"].dt.year == 2023]["CONSUMO_TOTAL"].sum()
+    consumo_mwh_2024 = (df_empresa[df_empresa["Data"].dt.year == 2024]["CONSUMO_TOTAL"].sum())/1000000
+    variacao_2022_2023 = ( consumo_mwh_2023 - consumo_mwh_2022 ) / consumo_mwh_2022 * 100
+    variacao_2023_2024 = ( consumo_mwh_2024 - consumo_mwh_2023 ) / consumo_mwh_2023 * 100
+
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
+    ax.bar(df_mensal["Ano_Mes"].dt.strftime("%b-%y"), df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, width=0.5)
     ax.axhline(y=media_ajustada, color="green", linestyle="--", label=f"Média Ajustada: {media_ajustada:.2f}")
     ax.axhline(y=limite_superior, color="orangered", linestyle="--", label=f"Limite Superior (+{num_mad} σ): {limite_superior:.2f}")
     ax.axhline(y=limite_inferior, color="orangered", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
+    ax.set_xticklabels(df_mensal["Ano_Mes"].dt.strftime("%b-%y"), rotation=50)
+    ax.set_ylabel("Consumo Médio Total")
+    ax.set_title(f"Consumo Histórico - {empresa_filtro}")
+
     st.pyplot(fig)
 
-    # 🔹 Criar tabela abaixo do gráfico
-    tabela_df = df_empresa.groupby("CNPJ_CARGA").agg({
-        "SIGLA_PARCELA_CARGA": "nunique",
-        "CIDADE": "first",
-        "ESTADO_UF": "first",
-        "RAMO_ATIVIDADE": "first",
-        "Consumo Médio Total": "sum"
-    }).reset_index()
-    tabela_df.columns = ["CNPJ", "Número de unidades", "Cidade", "Estado", "Ramo atividade", "Carga somada por submercado"]
-    st.write("### Informações da Empresa")
-    st.dataframe(tabela_df)
+    # 🔹 Função para buscar informações da tabela
+    def buscar_informacoes(df_empresa):
+        mes_mais_recente = df_empresa["Data"].max()
+        df_mes_recente = df_empresa[df_empresa["Data"] == mes_mais_recente]
+
+        tabela_df = pd.DataFrame({
+            "CNPJ": df_mes_recente["CNPJ_CARGA"].unique(),
+            "Unidades": df_mes_recente.groupby("CNPJ_CARGA")["SIGLA_PARCELA_CARGA"].nunique(),
+            "Cidade": df_mes_recente.groupby("CNPJ_CARGA")["CIDADE"].first(),
+            "Estado": df_mes_recente.groupby("CNPJ_CARGA")["ESTADO_UF"].first(),
+            "Ramo": df_mes_recente.groupby("CNPJ_CARGA")["RAMO_ATIVIDADE"].first(),
+            "Consumo Médio Total": df_mes_recente.groupby("CNPJ_CARGA")["Consumo Médio Total"].first(),
+        })
+
+        # Formatar o CNPJ corretamente
+        tabela_df["CNPJ"] = tabela_df["CNPJ"].astype(str)
+        tabela_df["CNPJ"] = tabela_df["CNPJ"].apply(lambda x: f"{x[:2]}.{x[2:5]}.{x[5:8]}/{x[8:12]}-{x[12:14]}" 
+                                                    if x.isdigit() and len(x) == 14 else x)
+
+        return tabela_df.reset_index(drop=True)
+
+    # 🔹 Exibir tabela abaixo do gráfico
+    tabela = buscar_informacoes(df_empresa)
+    st.write("### 📋 Informações da Empresa")
+    st.dataframe(tabela)
+
