@@ -100,7 +100,6 @@ if st.button("Calcular") and empresa_filtro:
             "Cidade": [tabela_df["CIDADE"].mode()[0]],  # Cidade mais frequente
             "Estado": [tabela_df["ESTADO_UF"].mode()[0]],  # Estado mais frequente
             "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],  # Concatenar ramos únicos
-            "Consumo Médio Total": [tabela_df["Consumo Médio Total"].sum()]
         })
 
         # Formatar o CNPJ corretamente
