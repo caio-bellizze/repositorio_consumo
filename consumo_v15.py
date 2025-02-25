@@ -63,16 +63,6 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # Calcular o consumo total em MWh e suas variações
-    consumo_mwh_2022 = df_empresa[df_empresa["Data"].dt.year == 2022]["CONSUMO_TOTAL"].sum()
-    consumo_mwh_2023 = df_empresa[df_empresa["Data"].dt.year == 2023]["CONSUMO_TOTAL"].sum()
-    consumo_mwh_2024 = (df_empresa[df_empresa["Data"].dt.year == 2024]["CONSUMO_TOTAL"].sum())/1000000
-    variacao_2022_2023 = ( consumo_mwh_2023 - consumo_mwh_2022 ) / consumo_mwh_2022 * 100
-    variacao_2023_2024 = ( consumo_mwh_2024 - consumo_mwh_2023 ) / consumo_mwh_2023 * 100
-
-    # 🔹 Formatar a coluna 'Ano_Mes' para exibição no gráfico
-    df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.strftime("%b-%y")
-
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"], df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, label="Consumo Mensal", width=0.5)
@@ -81,61 +71,16 @@ if st.button("Calcular") and empresa_filtro:
     ax.axhline(y=limite_inferior, color="orangered", linestyle="--", label=f"Limite Inferior (-{num_mad} σ): {limite_inferior:.2f}")
     
     ax.legend(title=f"Flexibilidade Estimada: {flexibilidade_estimativa:.2f}%", loc="lower right")
-
-    # Criar um box com informações adicionais no gráfico
-    texto_legenda = (
-    f"Variação no consumo 2022-2023: {variacao_2022_2023:.2f}%\n"
-    f"Variação no consumo 2023-2024: {variacao_2023_2024:.2f}%")
-
-    # Adicionando o box ao gráfico
-    ax.text(
-    0.02, 0.02, texto_legenda, transform=ax.transAxes, fontsize=10,
-    verticalalignment='bottom', horizontalalignment='left',
-    bbox=dict(boxstyle="square,pad=0.4", edgecolor="lightgray", facecolor="white", alpha=0.9))
-
-    # Adicionando linha divisória entre anos
-    ax.axvline(x=11.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
-    ax.axvline(x=23.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
-
-    # Ajustando os rótulos do eixo X
-    ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
-    ax.set_ylabel("Consumo Médio Total")
-    ax.set_title(f"Consumo Histórico - {empresa_filtro}")
-
-    # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
 
-    # Função para buscar as informações solicitadas
-    def buscar_informacoes(df_empresa):
-        # Seleciona os dados para o mês mais recente
-        mes_mais_recente = df_empresa["Data"].max()
-        df_mes_recente = df_empresa[df_empresa["Data"] == mes_mais_recente]
-
-        tabela_df = pd.DataFrame({
-            "CNPJ": df_mes_recente["CNPJ_CARGA"].unique(),
-            "Unidades": df_mes_recente.groupby("CNPJ_CARGA")["SIGLA_PARCELA_CARGA"].nunique(),
-            "Cidade": df_mes_recente.groupby("CNPJ_CARGA")["CIDADE"].first(),
-            "Estado": df_mes_recente.groupby("CNPJ_CARGA")["ESTADO_UF"].first(),
-            "Ramo": df_mes_recente.groupby("CNPJ_CARGA")["RAMO_ATIVIDADE"].first(),
-            "Consumo Médio Total": df_mes_recente.groupby("CNPJ_CARGA")["Consumo Médio Total"].first(),
-        })
-
-        # Formatar o CNPJ
-        tabela_df["CNPJ"] = tabela_df["CNPJ"].apply(lambda x: f"{str(x)[:2]}.{str(x)[2:5]}.{str(x)[5:8]}/{str(x)[8:12]}-{str(x)[12:14]}" if len(str(x)) == 14 else x)
-
-        # Destacar a matriz ou o menor número
-        tabela_df["Destacar"] = tabela_df["CNPJ"].apply(lambda x: 'Matriz' if '0001' in x else '')
-        tabela_df["Destacar"] = tabela_df["Destacar"].fillna('')
-        tabela_df = tabela_df.sort_values(by="CNPJ", ascending=False)  # Ordenar por CNPJ para destacar o menor
-
-        # Destacar a matriz ou o menor CNPJ
-        tabela_df["Destacar"] = tabela_df.apply(lambda row: "Matriz" if "0001" in row["CNPJ"] else ("Menor" if row["CNPJ"] == tabela_df["CNPJ"].min() else ""), axis=1)
-
-        tabela_df = tabela_df.reset_index(drop=True)
-        tabela_df = tabela_df.drop(columns=["Destacar"])
-
-        return tabela_df
-
-    # Exibir a tabela abaixo do gráfico
-    tabela = buscar_informacoes(df_empresa)
-    st.write(tabela)
+    # 🔹 Criar tabela abaixo do gráfico
+    tabela_df = df_empresa.groupby("CNPJ_CARGA").agg({
+        "SIGLA_PARCELA_CARGA": "nunique",
+        "CIDADE": "first",
+        "ESTADO_UF": "first",
+        "RAMO_ATIVIDADE": "first",
+        "Consumo Médio Total": "sum"
+    }).reset_index()
+    tabela_df.columns = ["CNPJ", "Número de unidades", "Cidade", "Estado", "Ramo atividade", "Carga somada por submercado"]
+    st.write("### Informações da Empresa")
+    st.dataframe(tabela_df)
