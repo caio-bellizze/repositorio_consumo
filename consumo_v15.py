@@ -2,18 +2,24 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import streamlit as st
+import re
 from scipy.stats.mstats import winsorize
 import openpyxl
-import re
 
-# 🔹 Configuração do Streamlit
-st.title("📊 Análise de Consumo de Energia")
-st.write("Selecione uma empresa, ajuste o limite de desvios padrões e defina o intervalo de datas.")
+# 🔹 Função para formatar o CNPJ corretamente
+def format_cnpj(cnpj):
+    cnpj = str(int(cnpj))  # Garantir que o CNPJ seja tratado como inteiro para evitar ".0"
+    cnpj = f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:14]}"
+    return cnpj
 
 # 🔹 Função para carregar os dados com cache
 @st.cache_data
 def carregar_dados(arquivo, planilha):
     return pd.read_excel(arquivo, sheet_name=planilha, engine="openpyxl")
+
+# 🔹 Configuração do Streamlit
+st.title("📊 Análise de Consumo de Energia")
+st.write("Selecione uma empresa, ajuste o limite de desvios padrões e defina o intervalo de datas.")
 
 # 🔹 Ler os dados
 arquivo = "base_de_dados_filtrada_v3.xlsx"
@@ -134,27 +140,24 @@ if st.button("Calcular") and empresa_filtro:
 
         return tabela_final
 
-    # Função para formatar o CNPJ
-    def format_cnpj(cnpj):
-        cnpj = re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/ \4-\5', cnpj)
-        return cnpj
-
     # 🔹 Exibir tabela abaixo do gráfico
     tabela = buscar_informacoes(df_empresa)
     st.write("### 📋 Informações da Empresa")
     st.dataframe(tabela, hide_index=True)
 
-    # 🔹 Exibir mais informações de todas as unidades
+    # 🔹 Botão "Exibir mais" para mostrar informações completas
     if st.button("Exibir mais"):
-        tabela_unidades = df_empresa.groupby("CNPJ_CARGA").agg({
-            "SIGLA_PARCELA_CARGA": "count",
+        tabela_completa = df_empresa.groupby("CNPJ_CARGA").agg({
+            "SIGLA_PARCELA_CARGA": "count",  # Contar número de unidades
             "CIDADE": "first",
             "ESTADO_UF": "first",
-            "RAMO_ATIVIDADE": lambda x: ", ".join(x.unique()),
+            "RAMO_ATIVIDADE": lambda x: ", ".join(x.unique()),  # Concatenar ramos únicos
             "Consumo Médio Total": "sum"
         }).reset_index()
 
-        tabela_unidades["CNPJ_CARGA"] = tabela_unidades["CNPJ_CARGA"].apply(lambda x: format_cnpj(str(x)))
-
-        st.write("### 📋 Informações de Todas as Unidades")
-        st.dataframe(tabela_unidades, hide_index=True)
+        # Formatar o CNPJ corretamente
+        tabela_completa["CNPJ_CARGA"] = tabela_completa["CNPJ_CARGA"].apply(lambda x: format_cnpj(x))
+        
+        # Exibir a tabela completa
+        st.write("### 📋 Informações Completas de Todas as Unidades")
+        st.dataframe(tabela_completa, hide_index=True)
