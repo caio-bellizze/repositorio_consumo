@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
 import openpyxl
+import re
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -123,21 +124,37 @@ if st.button("Calcular") and empresa_filtro:
 
         # Criar nova tabela consolidada
         tabela_final = pd.DataFrame({
-            "CNPJ": [cnpj_matriz],
+            "CNPJ": [format_cnpj(cnpj_matriz)],
             "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
             "Cidade": [tabela_df["CIDADE"].mode()[0]],  # Cidade mais frequente
             "Estado": [tabela_df["ESTADO_UF"].mode()[0]],  # Estado mais frequente
             "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],  # Concatenar ramos únicos
+            "Consumo Médio Total": [tabela_df["Consumo Médio Total"].sum()]
         })
 
-        # Formatar o CNPJ corretamente
-        tabela_final["CNPJ"] = tabela_final["CNPJ"].astype(str)
-        tabela_final["CNPJ"] = tabela_final["CNPJ"].apply(lambda x: f"{x[:2]}.{x[2:5]}.{x[5:8]}/{x[8:12]}-{x[12:14]}" 
-                                                           if x.isdigit() and len(x) == 14 else x)
-
         return tabela_final
+
+    # Função para formatar o CNPJ
+    def format_cnpj(cnpj):
+        cnpj = re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/ \4-\5', cnpj)
+        return cnpj
 
     # 🔹 Exibir tabela abaixo do gráfico
     tabela = buscar_informacoes(df_empresa)
     st.write("### 📋 Informações da Empresa")
     st.dataframe(tabela, hide_index=True)
+
+    # 🔹 Exibir mais informações de todas as unidades
+    if st.button("Exibir mais"):
+        tabela_unidades = df_empresa.groupby("CNPJ_CARGA").agg({
+            "SIGLA_PARCELA_CARGA": "count",
+            "CIDADE": "first",
+            "ESTADO_UF": "first",
+            "RAMO_ATIVIDADE": lambda x: ", ".join(x.unique()),
+            "Consumo Médio Total": "sum"
+        }).reset_index()
+
+        tabela_unidades["CNPJ_CARGA"] = tabela_unidades["CNPJ_CARGA"].apply(lambda x: format_cnpj(str(x)))
+
+        st.write("### 📋 Informações de Todas as Unidades")
+        st.dataframe(tabela_unidades, hide_index=True)
