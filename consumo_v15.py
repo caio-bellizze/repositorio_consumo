@@ -63,13 +63,6 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Recalcular a média considerando apenas os valores dentro dos limites
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
-    # Calcular o consumo total em MWh e suas variações
-    consumo_mwh_2022 = df_empresa[df_empresa["Data"].dt.year == 2022]["CONSUMO_TOTAL"].sum()
-    consumo_mwh_2023 = df_empresa[df_empresa["Data"].dt.year == 2023]["CONSUMO_TOTAL"].sum()
-    consumo_mwh_2024 = (df_empresa[df_empresa["Data"].dt.year == 2024]["CONSUMO_TOTAL"].sum())/1000000
-    variacao_2022_2023 = ( consumo_mwh_2023 - consumo_mwh_2022 ) / consumo_mwh_2022 * 100
-    variacao_2023_2024 = ( consumo_mwh_2024 - consumo_mwh_2023 ) / consumo_mwh_2023 * 100
-
     # 🔹 Criar gráfico
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.bar(df_mensal["Ano_Mes"].dt.strftime("%b-%y"), df_mensal["Consumo Médio Total"], color="blue", alpha=0.8, width=0.5)
@@ -89,24 +82,36 @@ if st.button("Calcular") and empresa_filtro:
         mes_mais_recente = df_empresa["Data"].max()
         df_mes_recente = df_empresa[df_empresa["Data"] == mes_mais_recente]
 
-        tabela_df = pd.DataFrame({
-            "CNPJ": df_mes_recente["CNPJ_CARGA"].unique(),
-            "Unidades": df_mes_recente.groupby("CNPJ_CARGA")["SIGLA_PARCELA_CARGA"].nunique(),
-            "Cidade": df_mes_recente.groupby("CNPJ_CARGA")["CIDADE"].first(),
-            "Estado": df_mes_recente.groupby("CNPJ_CARGA")["ESTADO_UF"].first(),
-            "Ramo": df_mes_recente.groupby("CNPJ_CARGA")["RAMO_ATIVIDADE"].first(),
-            "Consumo Médio Total": df_mes_recente.groupby("CNPJ_CARGA")["Consumo Médio Total"].first(),
+        tabela_df = df_mes_recente.groupby("CNPJ_CARGA").agg({
+            "SIGLA_PARCELA_CARGA": "count",  # Contar número de unidades
+            "CIDADE": "first",
+            "ESTADO_UF": "first",
+            "RAMO_ATIVIDADE": lambda x: ", ".join(x.unique()),  # Concatenar ramos únicos
+            "Consumo Médio Total": "sum"
+        }).reset_index()
+
+        # Pegando o CNPJ da Matriz (o menor CNPJ geralmente é o da matriz)
+        cnpj_matriz = tabela_df["CNPJ_CARGA"].astype(str).min()
+
+        # Criar nova tabela consolidada
+        tabela_final = pd.DataFrame({
+            "CNPJ": [cnpj_matriz],
+            "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
+            "Cidade": [tabela_df["CIDADE"].mode()[0]],  # Cidade mais frequente
+            "Estado": [tabela_df["ESTADO_UF"].mode()[0]],  # Estado mais frequente
+            "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],  # Concatenar ramos únicos
+            "Consumo Médio Total": [tabela_df["Consumo Médio Total"].sum()]
         })
 
         # Formatar o CNPJ corretamente
-        tabela_df["CNPJ"] = tabela_df["CNPJ"].astype(str)
-        tabela_df["CNPJ"] = tabela_df["CNPJ"].apply(lambda x: f"{x[:2]}.{x[2:5]}.{x[5:8]}/{x[8:12]}-{x[12:14]}" 
-                                                    if x.isdigit() and len(x) == 14 else x)
+        tabela_final["CNPJ"] = tabela_final["CNPJ"].astype(str)
+        tabela_final["CNPJ"] = tabela_final["CNPJ"].apply(lambda x: f"{x[:2]}.{x[2:5]}.{x[5:8]}/{x[8:12]}-{x[12:14]}" 
+                                                           if x.isdigit() and len(x) == 14 else x)
 
-        return tabela_df.reset_index(drop=True)
+        return tabela_final
 
     # 🔹 Exibir tabela abaixo do gráfico
     tabela = buscar_informacoes(df_empresa)
     st.write("### 📋 Informações da Empresa")
-    st.dataframe(tabela)
+    st.dataframe(tabela, hide_index=True)
 
