@@ -141,7 +141,7 @@ if st.button("Calcular") and empresa_filtro:
         "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],  # Concatenar ramos únicos
     })
 
-    return tabela_final
+        return tabela_final
 
     # 🔹 Função para formatar o CNPJ
     def format_cnpj(cnpj):
