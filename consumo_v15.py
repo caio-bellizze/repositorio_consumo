@@ -128,16 +128,20 @@ if st.button("Calcular") and empresa_filtro:
         # Pegando o CNPJ da Matriz (o menor CNPJ geralmente é o da matriz)
         cnpj_matriz = tabela_df["CNPJ_CARGA"].astype(str).min().split(".")[0]  # Remover casas decimais indesejadas
 
-        # Criar nova tabela consolidada
-        tabela_final = pd.DataFrame({
-            "CNPJ": [format_cnpj(cnpj_matriz)],
-            "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
-            "Cidade": [tabela_df["CIDADE"].mode()[0]],  # Cidade mais frequente
-            "Estado": [tabela_df["ESTADO_UF"].mode()[0]],  # Estado mais frequente
-            "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],  # Concatenar ramos únicos
-        })
+         # Filtrar a tabela para obter a cidade e o estado correspondentes ao CNPJ da matriz
+    cidade_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["CIDADE"].values[0]
+    estado_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["ESTADO_UF"].values[0]
 
-        return tabela_final
+    # Criar nova tabela consolidada
+    tabela_final = pd.DataFrame({
+        "CNPJ": [format_cnpj(cnpj_matriz)],
+        "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
+        "Cidade": [cidade_matriz],  # Cidade correspondente ao CNPJ da matriz
+        "Estado": [estado_matriz],  # Estado correspondente ao CNPJ da matriz
+        "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],  # Concatenar ramos únicos
+    })
+
+    return tabela_final
 
     # 🔹 Função para formatar o CNPJ
     def format_cnpj(cnpj):
