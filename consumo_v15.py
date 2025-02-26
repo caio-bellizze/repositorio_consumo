@@ -132,8 +132,8 @@ if st.button("Calcular") and empresa_filtro:
         tabela_final = pd.DataFrame({
             "CNPJ": [format_cnpj(cnpj_matriz)],
             "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
-            "Cidade": [tabela_df["CIDADE"].mode()[0]],  # Cidade mais frequente
-            "Estado": [tabela_df["ESTADO_UF"].mode()[0]],  # Estado mais frequente
+            "Cidade": [tabela_df.loc[tabela_df["CNPJ_CARGA"] == cnpj_matriz, "CIDADE"].values[0]],  
+            "Estado": [tabela_df.loc[tabela_df["CNPJ_CARGA"] == cnpj_matriz, "ESTADO_UF"].values[0]],  
             "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],  # Concatenar ramos únicos
         })
 
