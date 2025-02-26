@@ -141,7 +141,7 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Função para formatar o CNPJ
     def format_cnpj(cnpj):
-        cnpj = str(cnpj)z.fill(14)
+        cnpj = str(int(float(cnpj))).zfill(14)
         return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
 
     # 🔹 Exibir tabela abaixo do gráfico
