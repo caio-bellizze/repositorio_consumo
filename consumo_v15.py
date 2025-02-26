@@ -106,50 +106,54 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
 
-    # 🔹 Função para buscar informações da tabela
-    def buscar_informacoes(df_empresa):
-        if df_empresa.empty:
-            return pd.DataFrame()
-        
-        mes_mais_recente = df_empresa["Data"].max()
-        df_mes_recente = df_empresa[df_empresa["Data"] == mes_mais_recente]
+   # 🔹 Função para buscar informações da tabela
+def buscar_informacoes(df_empresa):
+    if df_empresa.empty:
+        return pd.DataFrame()
+    
+    mes_mais_recente = df_empresa["Data"].max()
+    df_mes_recente = df_empresa[df_empresa["Data"] == mes_mais_recente]
 
-        tabela_df = df_mes_recente.groupby("CNPJ_CARGA").agg({
-            "SIGLA_PARCELA_CARGA": "count",  # Contar número de unidades
-            "CIDADE": "first",
-            "ESTADO_UF": "first",
-            "RAMO_ATIVIDADE": lambda x: ", ".join(x.unique()),  # Concatenar ramos únicos
-            "Consumo Médio Total": "sum"
-        }).reset_index()
+    tabela_df = df_mes_recente.groupby("CNPJ_CARGA").agg({
+        "SIGLA_PARCELA_CARGA": "count",  # Contar número de unidades
+        "CIDADE": "first",
+        "ESTADO_UF": "first",
+        "RAMO_ATIVIDADE": lambda x: ", ".join(x.unique()),  # Concatenar ramos únicos
+        "Consumo Médio Total": "sum"
+    }).reset_index()
 
-        if tabela_df.empty:
-            return pd.DataFrame()
+    if tabela_df.empty:
+        return pd.DataFrame()
 
-        # Pegando o CNPJ da Matriz (o menor CNPJ geralmente é o da matriz)
-        cnpj_matriz = tabela_df["CNPJ_CARGA"].astype(str).min().split(".")[0]  # Remover casas decimais indesejadas
+    # Pegando o CNPJ da Matriz (o menor CNPJ geralmente é o da matriz)
+    cnpj_matriz = tabela_df["CNPJ_CARGA"].astype(str).min().split(".")[0]  # Remover casas decimais indesejadas
 
-        # Filtrar a tabela para obter a cidade e o estado correspondentes ao CNPJ da matriz
-        cidade_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["CIDADE"].values[0]
-        estado_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["ESTADO_UF"].values[0]
+    # Filtrar a tabela para obter a cidade e o estado correspondentes ao CNPJ da matriz
+    cidade_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["CIDADE"].values[0]
+    estado_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["ESTADO_UF"].values[0]
 
-        # Criar nova tabela consolidada
-        tabela_final = pd.DataFrame({
-            "CNPJ": [format_cnpj(cnpj_matriz)],
-            "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
-            "Cidade": [cidade_matriz],  # Cidade correspondente ao CNPJ da matriz
-            "Estado": [estado_matriz],  # Estado correspondente ao CNPJ da matriz
-            "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],
-             })
+    # Criar nova tabela consolidada
+    tabela_final = pd.DataFrame({
+        "CNPJ": [format_cnpj(cnpj_matriz)],
+        "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
+        "Cidade": [cidade_matriz],  # Cidade correspondente ao CNPJ da matriz
+        "Estado": [estado_matriz],  # Estado correspondente ao CNPJ da matriz
+        "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],
+    })
 
-        return tabela_final
+    return tabela_final, tabela_df  # Retornar também a tabela detalhada
 
-    # 🔹 Função para formatar o CNPJ
-    def format_cnpj(cnpj):
-        cnpj = str(int(float(cnpj))).zfill(14)
-        return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
+# 🔹 Função para formatar o CNPJ
+def format_cnpj(cnpj):
+    cnpj = str(int(float(cnpj))).zfill(14)
+    return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
 
-    # 🔹 Exibir tabela abaixo do gráfico
-    tabela = buscar_informacoes(df_empresa)
-    st.write("### 📋 Informações da Empresa")
-    st.dataframe(tabela, hide_index=True)
-        
+# 🔹 Exibir tabela abaixo do gráfico
+tabela, tabela_detalhada = buscar_informacoes(df_empresa)
+st.write("### 📋 Informações da Empresa")
+st.dataframe(tabela, hide_index=True)
+
+# 🔹 Botão para exibir mais informações
+if st.button("Exibir mais"):
+    st.write("### 📋 Informações Detalhadas das Unidades")
+    st.dataframe(tabela_detalhada, hide_index=True)
