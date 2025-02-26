@@ -174,6 +174,9 @@ submercado_consumo_df = pd.DataFrame({
     "% Consumo": consumo_submercados
 })
 
+# 🔹 Formatar os valores de porcentagem
+submercado_consumo_df["% Consumo"] = submercado_consumo_df["% Consumo"].map("{:.2f}%".format)
+
 # 🔹 Exibir porcentagem de consumo por submercado
 st.write("### 📋 Porcentagem de Consumo por Submercado")
 st.dataframe(submercado_consumo_df, hide_index=True)
