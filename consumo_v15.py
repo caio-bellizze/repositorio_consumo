@@ -106,10 +106,10 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
 
-   # 🔹 Função para buscar informações da tabela
+# 🔹 Função para buscar informações da tabela
 def buscar_informacoes(df_empresa):
     if df_empresa.empty:
-        return pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame()
     
     mes_mais_recente = df_empresa["Data"].max()
     df_mes_recente = df_empresa[df_empresa["Data"] == mes_mais_recente]
@@ -123,7 +123,7 @@ def buscar_informacoes(df_empresa):
     }).reset_index()
 
     if tabela_df.empty:
-        return pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame()
 
     # Pegando o CNPJ da Matriz (o menor CNPJ geralmente é o da matriz)
     cnpj_matriz = tabela_df["CNPJ_CARGA"].astype(str).min().split(".")[0]  # Remover casas decimais indesejadas
