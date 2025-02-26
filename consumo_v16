@@ -108,6 +108,9 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Função para buscar informações da tabela
     def buscar_informacoes(df_empresa):
+        if df_empresa.empty:
+            return pd.DataFrame()
+        
         mes_mais_recente = df_empresa["Data"].max()
         df_mes_recente = df_empresa[df_empresa["Data"] == mes_mais_recente]
 
@@ -119,28 +122,33 @@ if st.button("Calcular") and empresa_filtro:
             "Consumo Médio Total": "sum"
         }).reset_index()
 
+        if tabela_df.empty:
+            return pd.DataFrame()
+
         # Pegando o CNPJ da Matriz (o menor CNPJ geralmente é o da matriz)
-        cnpj_matriz = tabela_df["CNPJ_CARGA"].astype(str).min()
+        cnpj_matriz = tabela_df["CNPJ_CARGA"].astype(str).min().split(".")[0]  # Remover casas decimais indesejadas
+
+        # Filtrar a tabela para obter a cidade e o estado correspondentes ao CNPJ da matriz
+        cidade_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["CIDADE"].values[0]
+        estado_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["ESTADO_UF"].values[0]
 
         # Criar nova tabela consolidada
         tabela_final = pd.DataFrame({
             "CNPJ": [format_cnpj(cnpj_matriz)],
             "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
-            "Cidade": [tabela_df["CIDADE"].mode()[0]],  # Cidade mais frequente
-            "Estado": [tabela_df["ESTADO_UF"].mode()[0]],  # Estado mais frequente
-            "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],  # Concatenar ramos únicos
-        })
+            "Cidade": [cidade_matriz],  # Cidade correspondente ao CNPJ da matriz
+            "Estado": [estado_matriz],  # Estado correspondente ao CNPJ da matriz
+            "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],
+             })
 
         return tabela_final
 
-    # Função para formatar o CNPJ
+    # 🔹 Função para formatar o CNPJ
     def format_cnpj(cnpj):
-        cnpj = re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/ \4-\5', cnpj)
-        return cnpj
+        cnpj = str(int(float(cnpj))).zfill(14)
+        return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
 
     # 🔹 Exibir tabela abaixo do gráfico
     tabela = buscar_informacoes(df_empresa)
     st.write("### 📋 Informações da Empresa")
     st.dataframe(tabela, hide_index=True)
-
-   
