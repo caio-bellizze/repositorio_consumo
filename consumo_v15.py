@@ -152,3 +152,28 @@ if st.button("Calcular") and empresa_filtro:
     tabela = buscar_informacoes(df_empresa)
     st.write("### 📋 Informações da Empresa")
     st.dataframe(tabela, hide_index=True)
+
+    # 🔹 Calcular a porcentagem de consumo por submercado
+    consumo_total = df_empresa["Consumo Médio Total"].sum()
+    submercado_df = df_empresa.groupby("SUBMERCADO")["Consumo Médio Total"].sum().reset_index()
+    submercado_df["% Consumo"] = (submercado_df["Consumo Médio Total"] / consumo_total) * 100
+
+    # Criar tabela com submercados fixos e suas porcentagens de consumo
+    submercados = ["Sul", "Sudeste", "Norte", "Nordeste"]
+    consumo_submercados = []
+
+for submercado in submercados:
+    if submercado in submercado_df["SUBMERCADO"].values:
+        consumo_percentual = submercado_df[submercado_df["SUBMERCADO"] == submercado]["% Consumo"].values[0]
+    else:
+        consumo_percentual = 0.0
+    consumo_submercados.append(consumo_percentual)
+
+submercado_consumo_df = pd.DataFrame({
+    "Submercado": submercados,
+    "% Consumo": consumo_submercados
+})
+
+# 🔹 Exibir porcentagem de consumo por submercado
+st.write("### 📋 Porcentagem de Consumo por Submercado")
+st.dataframe(submercado_consumo_df, hide_index=True)
