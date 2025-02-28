@@ -143,3 +143,20 @@ resumo_df = pd.DataFrame({
 # 🔹 Exibir tabela no Streamlit
 st.write("### 📋 Resumo da Empresa")
 st.dataframe(resumo_df, hide_index=True)
+
+  # 🔹 Criar tabela de Percentual de Consumo por Submercado
+consumo_por_submercado = df_empresa_12m.groupby("SUBMERCADO")["Consumo Médio Total"].mean().reset_index()
+consumo_total = consumo_por_submercado["Consumo Médio Total"].sum()
+consumo_por_submercado["% Consumo Total"] = (consumo_por_submercado["Consumo Médio Total"] / consumo_total) * 100
+
+    # 🔹 Criar DataFrame final para exibição
+tabela_consumo_submercado = consumo_por_submercado.rename(columns={
+        "Consumo Médio Total": "Consumo (MWm 12 meses)"
+    })
+
+tabela_consumo_submercado["% Consumo Total"] = tabela_consumo_submercado["% Consumo Total"].map("{:.2f}%".format)
+
+    # 🔹 Exibir tabela abaixo da primeira tabela
+st.write("### 📋 Percentual de Consumo por Submercado")
+st.dataframe(tabela_consumo_submercado, hide_index=True)
+
