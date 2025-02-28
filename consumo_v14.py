@@ -152,7 +152,7 @@ if not df_empresa_12m.empty and "Consumo Médio Total" in df_empresa_12m.columns
     if consumo_total > 0:
         consumo_por_submercado["% Consumo Total"] = (consumo_por_submercado["Consumo Médio Total"] / consumo_total) * 100
     else:
-        consumo_por_submercado["% Consumo Total"] = 0  # Define como zero se não houver consumo total
+        consumo_por_submercado["% Consumo Total"] = 0  # Define como zero para evitar erro
 
     # 🔹 Criar DataFrame final para exibição
     tabela_consumo_submercado = consumo_por_submercado.rename(columns={
