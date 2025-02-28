@@ -144,19 +144,25 @@ resumo_df = pd.DataFrame({
 st.write("### 📋 Resumo da Empresa")
 st.dataframe(resumo_df, hide_index=True)
 
-  # 🔹 Criar tabela de Percentual de Consumo por Submercado
-consumo_por_submercado = df_empresa_12m.groupby("SUBMERCADO")["Consumo Médio Total"].mean().reset_index()
-consumo_total = consumo_por_submercado["Consumo Médio Total"].sum()
-consumo_por_submercado["% Consumo Total"] = (consumo_por_submercado["Consumo Médio Total"] / consumo_total) * 100
+# 🔹 Criar tabela de Percentual de Consumo por Submercado
+if not df_empresa_12m.empty and "Consumo Médio Total" in df_empresa_12m.columns:
+    consumo_por_submercado = df_empresa_12m.groupby("SUBMERCADO")["Consumo Médio Total"].mean().reset_index()
+    consumo_total = consumo_por_submercado["Consumo Médio Total"].sum()
+
+    if consumo_total > 0:
+        consumo_por_submercado["% Consumo Total"] = (consumo_por_submercado["Consumo Médio Total"] / consumo_total) * 100
+    else:
+        consumo_por_submercado["% Consumo Total"] = 0  # Define como zero se não houver consumo total
 
     # 🔹 Criar DataFrame final para exibição
-tabela_consumo_submercado = consumo_por_submercado.rename(columns={
+    tabela_consumo_submercado = consumo_por_submercado.rename(columns={
         "Consumo Médio Total": "Consumo (MWm 12 meses)"
     })
 
-tabela_consumo_submercado["% Consumo Total"] = tabela_consumo_submercado["% Consumo Total"].map("{:.2f}%".format)
+    tabela_consumo_submercado["% Consumo Total"] = tabela_consumo_submercado["% Consumo Total"].map("{:.2f}%".format)
 
     # 🔹 Exibir tabela abaixo da primeira tabela
-st.write("### 📋 Percentual de Consumo por Submercado")
-st.dataframe(tabela_consumo_submercado, hide_index=True)
-
+    st.write("### 📋 Percentual de Consumo por Submercado")
+    st.dataframe(tabela_consumo_submercado, hide_index=True)
+else:
+    st.warning("Nenhum dado disponível para calcular o consumo por submercado.")
