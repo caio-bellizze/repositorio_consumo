@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from scipy.stats.mstats import winsorize
 import openpyxl
+import re
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
@@ -93,7 +94,6 @@ if st.button("Calcular") and empresa_filtro:
     verticalalignment='bottom', horizontalalignment='left',
     bbox=dict(boxstyle="square,pad=0.4", edgecolor="lightgray", facecolor="white", alpha=0.9))
 
-    
     # Adicionando linha divisória entre anos
     ax.axvline(x=11.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
     ax.axvline(x=23.5, color='gray', linestyle='dashed', ymin=0, ymax=1)  # Linha divisória entre os anos
@@ -106,3 +106,40 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
 
+   # 🔹 Filtrar os últimos 12 meses
+data_limite = df_empresa["Data"].max() - pd.DateOffset(months=12)
+df_ultimos_12_meses = df_empresa[df_empresa["Data"] >= data_limite]
+
+# 🔹 Contar Unidades únicas
+unidades_unicas = df_ultimos_12_meses["SIGLA_PARCELA_CARGA"].nunique()
+
+# 🔹 Determinar se há Submercado Misto
+submercado_misto = "Sim" if df_ultimos_12_meses["SUBMERCADO"].nunique() > 1 else "Não"
+
+# 🔹 Definir o Possível Centro Decisório
+
+def format_cnpj(cnpj):
+    cnpj = str(int(float(cnpj))).zfill(14)
+    return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
+
+# Aplicar formatação ao CNPJ
+df_ultimos_12_meses["CNPJ_CARGA"] = df_ultimos_12_meses["CNPJ_CARGA"].astype(str).apply(format_cnpj)
+
+definir_centro = df_ultimos_12_meses.copy()
+definir_centro["MATRIZ"] = definir_centro["CNPJ_CARGA"].apply(lambda x: x[11:15] == "0001")
+
+if definir_centro["MATRIZ"].any():
+    centro_decisorio = definir_centro[definir_centro["MATRIZ"]][["CIDADE", "ESTADO_UF"]].iloc[0]
+else:
+    centro_decisorio = definir_centro.loc[definir_centro["Consumo Médio Total"].idxmax(), ["CIDADE", "ESTADO_UF"]]
+
+# 🔹 Criar tabela final
+resumo_df = pd.DataFrame({
+    "Unidades": [unidades_unicas],
+    "Submercado Misto": [submercado_misto],
+    "Possível Centro Decisório": [f"{centro_decisorio['CIDADE']} / {centro_decisorio['ESTADO_UF']}"]
+})
+
+# 🔹 Exibir tabela no Streamlit
+st.write("### 📋 Resumo da Empresa")
+st.dataframe(resumo_df, hide_index=True)
