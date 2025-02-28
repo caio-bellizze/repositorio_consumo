@@ -145,8 +145,8 @@ st.write("### 📋 Resumo da Empresa")
 st.dataframe(resumo_df, hide_index=True)
 
 # 🔹 Criar tabela de Percentual de Consumo por Submercado
-if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_empresa_12m.columns:
-    consumo_por_submercado = df_empresa_12m.groupby("SUBMERCADO")["Consumo Médio Total"].mean().reset_index()
+if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_meses.columns:
+    consumo_por_submercado = df_ultimos_12_meses.groupby("SUBMERCADO")["Consumo Médio Total"].mean().reset_index()
     consumo_total = consumo_por_submercado["Consumo Médio Total"].sum()
 
     if consumo_total > 0:
