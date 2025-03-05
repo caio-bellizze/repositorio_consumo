@@ -169,6 +169,9 @@ if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_mes
     })
     
     tabela_consumo_submercado["% do Total"] = tabela_consumo_submercado["% do Total"].map("{:.2f}%".format)
+
+    # Remover a coluna "Consumo (MWm 12 meses)" antes de exibir
+    tabela_consumo_submercado = tabela_consumo_submercado.drop(columns=["Consumo (MWm 12 meses)"])
     
     # 🔹 Exibir tabela no Streamlit
     st.write("### 📋 Percentual de Consumo por Submercado")
