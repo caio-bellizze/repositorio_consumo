@@ -154,7 +154,7 @@ if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_mes
     consumo_total = consumo_por_submercado["Consumo Médio Total"].sum()
     
     # 🔹 Criar coluna de consumo médio mensal
-    consumo_por_submercado["Consumo Médio Mensal (MWm"] = consumo_por_submercado["Consumo Médio Total"] / 12
+    consumo_por_submercado["Consumo Médio Mensal (MWm)"] = consumo_por_submercado["Consumo Médio Total"] / 12
     
     # 🔹 Criar coluna de percentual do total
     if consumo_total > 0:
