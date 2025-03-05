@@ -133,6 +133,17 @@ if definir_centro["MATRIZ"].any():
 else:
     centro_decisorio = definir_centro.loc[definir_centro["Consumo Médio Total"].idxmax(), ["CIDADE", "ESTADO_UF"]]
 
+# 🔹 Criar tabela final
+resumo_df = pd.DataFrame({
+    "Unidades": [unidades_unicas],
+    "Submercado Misto": [submercado_misto],
+    "Possível Centro Decisório": [f"{centro_decisorio['CIDADE']} / {centro_decisorio['ESTADO_UF']}"]
+})
+
+# 🔹 Exibir tabela no Streamlit
+st.write("### 📋 Resumo da Empresa")
+st.dataframe(resumo_df, hide_index=True)
+
 # 🔹 Filtrar os últimos 12 meses
 data_limite = df_empresa["Data"].max() - pd.DateOffset(months=12)
 df_ultimos_12_meses = df_empresa[df_empresa["Data"] >= data_limite]
