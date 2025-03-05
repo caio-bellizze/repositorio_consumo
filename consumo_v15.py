@@ -106,77 +106,61 @@ if st.button("Calcular") and empresa_filtro:
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
 
-    # 🔹 Função para buscar informações da tabela
-    def buscar_informacoes(df_empresa):
-        if df_empresa.empty:
-            return pd.DataFrame()
-        
-        mes_mais_recente = df_empresa["Data"].max()
-        df_mes_recente = df_empresa[df_empresa["Data"] == mes_mais_recente]
+   # 🔹 Filtrar os últimos 12 meses
+data_limite = df_empresa["Data"].max() - pd.DateOffset(months=12)
+df_ultimos_12_meses = df_empresa[df_empresa["Data"] >= data_limite]
 
-        tabela_df = df_mes_recente.groupby("CNPJ_CARGA").agg({
-            "SIGLA_PARCELA_CARGA": "count",  # Contar número de unidades
-            "CIDADE": "first",
-            "ESTADO_UF": "first",
-            "RAMO_ATIVIDADE": lambda x: ", ".join(x.unique()),  # Concatenar ramos únicos
-            "Consumo Médio Total": "sum"
-        }).reset_index()
+# 🔹 Contar Unidades únicas
+unidades_unicas = df_ultimos_12_meses["SIGLA_PARCELA_CARGA"].nunique()
 
-        if tabela_df.empty:
-            return pd.DataFrame()
+# 🔹 Determinar se há Submercado Misto
+submercado_misto = "Sim" if df_ultimos_12_meses["SUBMERCADO"].nunique() > 1 else "Não"
 
-        # Pegando o CNPJ da Matriz (o menor CNPJ geralmente é o da matriz)
-        cnpj_matriz = tabela_df["CNPJ_CARGA"].astype(str).min().split(".")[0]  # Remover casas decimais indesejadas
+# 🔹 Definir o Possível Centro Decisório
 
-        # Filtrar a tabela para obter a cidade e o estado correspondentes ao CNPJ da matriz
-        cidade_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["CIDADE"].values[0]
-        estado_matriz = tabela_df[tabela_df["CNPJ_CARGA"].astype(str).str.startswith(cnpj_matriz)]["ESTADO_UF"].values[0]
+def format_cnpj(cnpj):
+    cnpj = str(int(float(cnpj))).zfill(14)
+    return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
 
-        # Criar nova tabela consolidada
-        tabela_final = pd.DataFrame({
-            "CNPJ": [format_cnpj(cnpj_matriz)],
-            "Unidades": [tabela_df["SIGLA_PARCELA_CARGA"].sum()],
-            "Cidade": [cidade_matriz],  # Cidade correspondente ao CNPJ da matriz
-            "Estado": [estado_matriz],  # Estado correspondente ao CNPJ da matriz
-            "Ramo": [", ".join(tabela_df["RAMO_ATIVIDADE"].unique())],
-             })
+# Aplicar formatação ao CNPJ
+df_ultimos_12_meses["CNPJ_CARGA"] = df_ultimos_12_meses["CNPJ_CARGA"].astype(str).apply(format_cnpj)
 
-        return tabela_final
+definir_centro = df_ultimos_12_meses.copy()
+definir_centro["MATRIZ"] = definir_centro["CNPJ_CARGA"].apply(lambda x: x[11:15] == "0001")
 
-    # 🔹 Função para formatar o CNPJ
-    def format_cnpj(cnpj):
-        cnpj = str(int(float(cnpj))).zfill(14)
-        return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
+if definir_centro["MATRIZ"].any():
+    centro_decisorio = definir_centro[definir_centro["MATRIZ"]][["CIDADE", "ESTADO_UF"]].iloc[0]
+else:
+    centro_decisorio = definir_centro.loc[definir_centro["Consumo Médio Total"].idxmax(), ["CIDADE", "ESTADO_UF"]]
 
-    # 🔹 Exibir tabela abaixo do gráfico
-    tabela = buscar_informacoes(df_empresa)
-    st.write("### 📋 Informações da Empresa")
-    st.dataframe(tabela, hide_index=True)
+# 🔹 Filtrar os últimos 12 meses
+data_limite = df_empresa["Data"].max() - pd.DateOffset(months=12)
+df_ultimos_12_meses = df_empresa[df_empresa["Data"] >= data_limite]
 
-    # 🔹 Calcular a porcentagem de consumo por submercado
-    consumo_total = df_empresa["Consumo Médio Total"].sum()
-    submercado_df = df_empresa.groupby("SUBMERCADO")["Consumo Médio Total"].sum().reset_index()
-    submercado_df["% Consumo"] = (submercado_df["Consumo Médio Total"] / consumo_total) * 100
-
-    # Criar tabela com submercados fixos e suas porcentagens de consumo
-    submercados = ["Sul", "Sudeste", "Norte", "Nordeste"]
-    consumo_submercados = []
-
-for submercado in submercados:
-    if submercado in submercado_df["SUBMERCADO"].values:
-        consumo_percentual = submercado_df[submercado_df["SUBMERCADO"] == submercado]["% Consumo"].values[0]
+# 🔹 Criar tabela de Percentual de Consumo por Submercado
+if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_meses.columns:
+    consumo_por_submercado = df_ultimos_12_meses.groupby("SUBMERCADO")["Consumo Médio Total"].sum().reset_index()
+    consumo_total = consumo_por_submercado["Consumo Médio Total"].sum()
+    
+    # 🔹 Criar coluna de consumo médio mensal
+    consumo_por_submercado["Consumo Médio Mensal"] = consumo_por_submercado["Consumo Médio Total"] / 12
+    
+    # 🔹 Criar coluna de percentual do total
+    if consumo_total > 0:
+        consumo_por_submercado["% Consumo Total"] = (consumo_por_submercado["Consumo Médio Total"] / consumo_total) * 100
     else:
-        consumo_percentual = 0.0
-    consumo_submercados.append(consumo_percentual)
-
-submercado_consumo_df = pd.DataFrame({
-    "Submercado": submercados,
-    "% Consumo": consumo_submercados
-})
-
-# 🔹 Formatar os valores de porcentagem
-submercado_consumo_df["% Consumo"] = submercado_consumo_df["% Consumo"].map("{:.2f}%".format)
-
-# 🔹 Exibir porcentagem de consumo por submercado
-st.write("### 📋 Porcentagem de Consumo por Submercado")
-st.dataframe(submercado_consumo_df, hide_index=True)
+        consumo_por_submercado["% Consumo Total"] = 0  # Define como zero para evitar erro
+    
+    # 🔹 Renomear colunas para exibição
+    tabela_consumo_submercado = consumo_por_submercado.rename(columns={
+        "Consumo Médio Total": "Consumo (MWm 12 meses)",
+        "% Consumo Total": "% do Total"
+    })
+    
+    tabela_consumo_submercado["% do Total"] = tabela_consumo_submercado["% do Total"].map("{:.2f}%".format)
+    
+    # 🔹 Exibir tabela no Streamlit
+    st.write("### 📋 Percentual de Consumo por Submercado")
+    st.dataframe(tabela_consumo_submercado, hide_index=True)
+else:
+    st.warning("Nenhum dado disponível para calcular o consumo por submercado.")
