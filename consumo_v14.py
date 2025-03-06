@@ -199,3 +199,5 @@ else:
     # 🔹 Exibir tabela no Streamlit
     st.write("### 📋 Detalhamento por Unidade")
     st.dataframe(tabela_unidades, hide_index=True)
+
+st.write("oi teste, certo?")
