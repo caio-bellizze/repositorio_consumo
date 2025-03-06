@@ -185,6 +185,9 @@ tabela_unidades = df_ultimos_12_meses.groupby(["SIGLA_PARCELA_CARGA", "CNPJ_CARG
     "Consumo Médio Total": "sum"  # Soma do consumo nos últimos 12 meses
 })
 
+# 🔹 Remover duplicatas
+tabela_unidades = tabela_unidades.drop_duplicates()
+
 # 🔹 Renomear colunas
 tabela_unidades = tabela_unidades.rename(columns={
     "SIGLA_PARCELA_CARGA": "Unidade",
@@ -192,8 +195,8 @@ tabela_unidades = tabela_unidades.rename(columns={
     "CIDADE": "Cidade",
     "ESTADO_UF": "Estado",
     "SUBMERCADO": "Submercado",
-    "CAPACIDADE_CARGA": "Capacidade de Carga",
-    "Consumo Médio Total": "Consumo 12m"
+    "CAPACIDADE_CARGA": "Capacidade de Carga (MW)",
+    "Consumo Médio Total": "Consumo - MWm (Últimos 12m)"
 })
 
 # 🔹 Exibir tabela no Streamlit
