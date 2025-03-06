@@ -129,16 +129,16 @@ definir_centro = df_ultimos_12_meses.copy()
 definir_centro["MATRIZ"] = definir_centro["CNPJ_CARGA"].apply(lambda x: x[11:15] == "0001")
 
 if definir_centro["MATRIZ"].any():
-    centro_decisorio = definir_centro[definir_centro["MATRIZ"]][["CIDADE", "ESTADO_UF"]].iloc[0]
+    centro_decisorio = definir_centro[definir_centro["MATRIZ"]][["CIDADE", "ESTADO_UF", "CNPJ_CARGA"]].iloc[0]
 else:
-    centro_decisorio = definir_centro.loc[definir_centro["Consumo Médio Total"].idxmax(), ["CIDADE", "ESTADO_UF"]]
+    centro_decisorio = definir_centro.loc[definir_centro["Consumo Médio Total"].idxmax(), ["CIDADE", "ESTADO_UF", "CNPJ_CARGA"]]
 
 # 🔹 Criar tabela final
 resumo_df = pd.DataFrame({
     "Unidades": [unidades_unicas],
     "Submercado Misto": [submercado_misto],
     "Possível Centro Decisório": [f"{centro_decisorio['CIDADE']} / {centro_decisorio['ESTADO_UF']}"],
-     "CNPJ do Centro Decisório": [centro_decisorio.get('CNPJ_CARGA', 'N/A')]
+    "CNPJ do Centro Decisório": [centro_decisorio['CNPJ_CARGA']]
 })
 
 # 🔹 Exibir tabela no Streamlit
