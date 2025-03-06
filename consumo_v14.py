@@ -144,25 +144,58 @@ resumo_df = pd.DataFrame({
 st.write("### 📋 Resumo da Empresa")
 st.dataframe(resumo_df, hide_index=True)
 
+# 🔹 Filtrar os últimos 12 meses
+data_limite = df_empresa["Data"].max() - pd.DateOffset(months=12)
+df_ultimos_12_meses = df_empresa[df_empresa["Data"] >= data_limite]
+
 # 🔹 Criar tabela de Percentual de Consumo por Submercado
 if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_meses.columns:
-    consumo_por_submercado = df_ultimos_12_meses.groupby("SUBMERCADO")["Consumo Médio Total"].mean().reset_index()
+    consumo_por_submercado = df_ultimos_12_meses.groupby("SUBMERCADO")["Consumo Médio Total"].sum().reset_index()
     consumo_total = consumo_por_submercado["Consumo Médio Total"].sum()
-
+    
+    # 🔹 Criar coluna de consumo médio mensal
+    consumo_por_submercado["Consumo Médio Mensal (MWm)"] = consumo_por_submercado["Consumo Médio Total"] / 12
+    
+    # 🔹 Criar coluna de percentual do total
     if consumo_total > 0:
         consumo_por_submercado["% Consumo Total"] = (consumo_por_submercado["Consumo Médio Total"] / consumo_total) * 100
     else:
         consumo_por_submercado["% Consumo Total"] = 0  # Define como zero para evitar erro
-
-    # 🔹 Criar DataFrame final para exibição
+    
+    # 🔹 Renomear colunas para exibição
     tabela_consumo_submercado = consumo_por_submercado.rename(columns={
-        "Consumo Médio Total": "Consumo (MWm 12 meses)"
+        "Consumo Médio Total": "Consumo (MWm 12 meses)",
+        "% Consumo Total": "% do Total"
     })
+    
+    tabela_consumo_submercado["% do Total"] = tabela_consumo_submercado["% do Total"].map("{:.2f}%".format)
 
-    tabela_consumo_submercado["% Consumo Total"] = tabela_consumo_submercado["% Consumo Total"].map("{:.2f}%".format)
-
-    # 🔹 Exibir tabela abaixo da primeira tabela
+    # Remover a coluna "Consumo (MWm 12 meses)" antes de exibir
+    tabela_consumo_submercado = tabela_consumo_submercado.drop(columns=["Consumo (MWm 12 meses)"])
+    
+    # 🔹 Exibir tabela no Streamlit
     st.write("### 📋 Percentual de Consumo por Submercado")
     st.dataframe(tabela_consumo_submercado, hide_index=True)
 else:
     st.warning("Nenhum dado disponível para calcular o consumo por submercado.")
+
+# 🔹 Criar tabela detalhada por unidade
+tabela_unidades = df_ultimos_12_meses.groupby(["SIGLA_PARCELA_CARGA", "CNPJ_CARGA", "CIDADE", "ESTADO_UF", "SUBMERCADO"], as_index=False).agg({
+    "CAPACIDADE_CARGA": "first",  # Assume que a capacidade de carga é fixa para cada unidade
+    "Consumo Médio Total": "sum"  # Soma do consumo nos últimos 12 meses
+})
+
+# 🔹 Renomear colunas
+tabela_unidades = tabela_unidades.rename(columns={
+    "SIGLA_PARCELA_CARGA": "Unidade",
+    "CNPJ_CARGA": "CNPJ",
+    "CIDADE": "Cidade",
+    "ESTADO_UF": "Estado",
+    "SUBMERCADO": "Submercado",
+    "CAPACIDADE_CARGA": "Capacidade de Carga",
+    "Consumo Médio Total": "Consumo 12m"
+})
+
+# 🔹 Exibir tabela no Streamlit
+st.write("### 📋 Detalhamento por Unidade")
+st.dataframe(tabela_unidades, hide_index=True)
