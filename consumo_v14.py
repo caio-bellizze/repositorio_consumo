@@ -182,6 +182,11 @@ else:
 # 🔹 Obter lista única de unidades
 unidades_unicas = df_ultimos_12_meses["SIGLA_PARCELA_CARGA"].unique()
 
+# Função para formatar o CNPJ
+def format_cnpj(cnpj):
+    cnpj = str(int(float(cnpj))).zfill(14)
+    return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
+
 # 🔹 Criar lista para armazenar os dados das unidades
 dados_unidades = []
 
