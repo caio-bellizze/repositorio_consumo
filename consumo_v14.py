@@ -137,7 +137,8 @@ else:
 resumo_df = pd.DataFrame({
     "Unidades": [unidades_unicas],
     "Submercado Misto": [submercado_misto],
-    "Possível Centro Decisório": [f"{centro_decisorio['CIDADE']} / {centro_decisorio['ESTADO_UF']}"]
+    "Possível Centro Decisório": [f"{centro_decisorio['CIDADE']} / {centro_decisorio['ESTADO_UF']}"],
+    "CNPJ da unidade": [centro_decisorio['CNPJ_CARGA']]
 })
 
 # 🔹 Exibir tabela no Streamlit
