@@ -179,23 +179,23 @@ if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_mes
 else:
     st.warning("Nenhum dado disponível para calcular o consumo por submercado.")
 
-# 🔹 Criar tabela detalhada por unidade
-tabela_unidades = df_ultimos_12_meses.groupby(["SIGLA_PARCELA_CARGA", "CNPJ_CARGA", "CIDADE", "ESTADO_UF", "SUBMERCADO"], as_index=False).agg({
+    # 🔹 Criar tabela detalhada por unidade
+    tabela_unidades = df_ultimos_12_meses.groupby(["SIGLA_PARCELA_CARGA", "CNPJ_CARGA", "CIDADE", "ESTADO_UF", "SUBMERCADO"], as_index=False).agg({
     "CAPACIDADE_CARGA": "first",  # Assume que a capacidade de carga é fixa para cada unidade
     "Consumo Médio Total": "sum"  # Soma do consumo nos últimos 12 meses
-})
+    })
 
-# 🔹 Renomear colunas
-tabela_unidades = tabela_unidades.rename(columns={
-    "SIGLA_PARCELA_CARGA": "Unidade",
-    "CNPJ_CARGA": "CNPJ",
-    "CIDADE": "Cidade",
-    "ESTADO_UF": "Estado",
-    "SUBMERCADO": "Submercado",
-    "CAPACIDADE_CARGA": "Capacidade de Carga",
-    "Consumo Médio Total": "Consumo 12m"
-})
+    # 🔹 Renomear colunas
+    tabela_unidades = tabela_unidades.rename(columns={
+        "SIGLA_PARCELA_CARGA": "Unidade",
+        "CNPJ_CARGA": "CNPJ",
+        "CIDADE": "Cidade",
+        "ESTADO_UF": "Estado",
+        "SUBMERCADO": "Submercado",
+        "CAPACIDADE_CARGA": "Capacidade de Carga",
+        "Consumo Médio Total": "Consumo 12m"
+    })
 
-# 🔹 Exibir tabela no Streamlit
-st.write("### 📋 Detalhamento por Unidade")
-st.dataframe(tabela_unidades, hide_index=True)
+    # 🔹 Exibir tabela no Streamlit
+    st.write("### 📋 Detalhamento por Unidade")
+    st.dataframe(tabela_unidades, hide_index=True)
