@@ -175,7 +175,7 @@ if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_mes
     tabela_consumo_submercado = tabela_consumo_submercado.drop(columns=["Consumo (MWm 12 meses)"])
     
     # 🔹 Exibir tabela no Streamlit
-    st.write("### 📋 Percentual de Consumo por Submercado")
+    st.write("### 🇧🇷 Percentual de Consumo por Submercado")
     st.dataframe(tabela_consumo_submercado, hide_index=True)
 else:
     st.warning("Nenhum dado disponível para calcular o consumo por submercado.")
@@ -215,5 +215,5 @@ for unidade in unidades_unicas:
 tabela_unidades = pd.DataFrame(dados_unidades)
 
 # 🔹 Exibir tabela no Streamlit
-st.write("### 📋 Detalhamento por Unidade")
+st.write("### 🏭 Detalhamento por Unidade")
 st.dataframe(tabela_unidades, hide_index=True)
