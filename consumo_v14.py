@@ -184,7 +184,7 @@ unidades_unicas = df_ultimos_12_meses["SIGLA_PARCELA_CARGA"].unique()
 
 # Função para formatar o CNPJ
 def format_cnpj(cnpj):
-    cnpj = str(int(float(cnpj))).zfill(14)
+    cnpj = str(cnpj).zfill(14)
     return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
 
 # 🔹 Criar lista para armazenar os dados das unidades
@@ -193,7 +193,7 @@ dados_unidades = []
 # 🔹 Iterar sobre cada unidade única e buscar as informações correspondentes
 for unidade in unidades_unicas:
     df_unidade = df_ultimos_12_meses[df_ultimos_12_meses["SIGLA_PARCELA_CARGA"] == unidade]
-    cnpj = df_unidade["CNPJ_CARGA"].iloc[0]
+    cnpj = format_cnpj(df_unidade["CNPJ_CARGA"].iloc[0])
     cidade = df_unidade["CIDADE"].iloc[0]
     estado = df_unidade["ESTADO_UF"].iloc[0]
     submercado = df_unidade["SUBMERCADO"].iloc[0]
