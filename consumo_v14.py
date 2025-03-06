@@ -179,28 +179,34 @@ if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_mes
 else:
     st.warning("Nenhum dado disponível para calcular o consumo por submercado.")
 
-   # 🔹 Selecionar entradas únicas para cada unidade
-df_unidades_unicas = df_ultimos_12_meses.drop_duplicates(subset=["SIGLA_PARCELA_CARGA", "CNPJ_CARGA", "CIDADE", "ESTADO_UF", "SUBMERCADO"])
+# 🔹 Obter lista única de unidades
+unidades_unicas = df_ultimos_12_meses["SIGLA_PARCELA_CARGA"].unique()
 
-# 🔹 Criar tabela detalhada por unidade
-tabela_unidades = df_unidades_unicas.groupby(
-    ["SIGLA_PARCELA_CARGA", "CNPJ_CARGA", "CIDADE", "ESTADO_UF", "SUBMERCADO"], 
-    as_index=False
-).agg({
-    "CAPACIDADE_CARGA": "first",  # Assume que a capacidade de carga é fixa para cada unidade
-    "Consumo Médio Total": "sum"  # Soma do consumo nos últimos 12 meses
-})
+# 🔹 Criar lista para armazenar os dados das unidades
+dados_unidades = []
 
-# 🔹 Renomear colunas
-tabela_unidades = tabela_unidades.rename(columns={
-    "SIGLA_PARCELA_CARGA": "Unidade",
-    "CNPJ_CARGA": "CNPJ",
-    "CIDADE": "Cidade",
-    "ESTADO_UF": "Estado",
-    "SUBMERCADO": "Submercado",
-    "CAPACIDADE_CARGA": "Capacidade de Carga",
-    "Consumo Médio Total": "Consumo 12m"
-})
+# 🔹 Iterar sobre cada unidade única e buscar as informações correspondentes
+for unidade in unidades_unicas:
+    df_unidade = df_ultimos_12_meses[df_ultimos_12_meses["SIGLA_PARCELA_CARGA"] == unidade]
+    cnpj = df_unidade["CNPJ_CARGA"].iloc[0]
+    cidade = df_unidade["CIDADE"].iloc[0]
+    estado = df_unidade["ESTADO_UF"].iloc[0]
+    submercado = df_unidade["SUBMERCADO"].iloc[0]
+    capacidade_carga = df_unidade["CAPACIDADE_CARGA"].iloc[0]
+    consumo_12m = df_unidade["Consumo Médio Total"].mean()  # Média do consumo nos últimos 12 meses
+    
+    dados_unidades.append({
+        "Unidade": unidade,
+        "CNPJ": cnpj,
+        "Cidade": cidade,
+        "Estado": estado,
+        "Submercado": submercado,
+        "Capacidade de Carga": capacidade_carga,
+        "Consumo 12m": consumo_12m
+    })
+
+# 🔹 Criar DataFrame a partir da lista de dados das unidades
+tabela_unidades = pd.DataFrame(dados_unidades)
 
 # 🔹 Exibir tabela no Streamlit
 st.write("### 📋 Detalhamento por Unidade")
