@@ -129,15 +129,16 @@ definir_centro = df_ultimos_12_meses.copy()
 definir_centro["MATRIZ"] = definir_centro["CNPJ_CARGA"].apply(lambda x: x[11:15] == "0001")
 
 if definir_centro["MATRIZ"].any():
-    centro_decisorio = definir_centro[definir_centro["MATRIZ"]][["CIDADE", "ESTADO_UF"]].iloc[0]
+    centro_decisorio = definir_centro[definir_centro["MATRIZ"]][["CIDADE", "ESTADO_UF", "CNPJ_CARGA"]].iloc[0]
 else:
-    centro_decisorio = definir_centro.loc[definir_centro["Consumo Médio Total"].idxmax(), ["CIDADE", "ESTADO_UF"]]
+    centro_decisorio = definir_centro.loc[definir_centro["Consumo Médio Total"].idxmax(), ["CIDADE", "ESTADO_UF", "CNPJ_CARGA"]]
 
 # 🔹 Criar tabela final
 resumo_df = pd.DataFrame({
     "Unidades": [unidades_unicas],
     "Submercado Misto": [submercado_misto],
-    "Possível Centro Decisório": [f"{centro_decisorio['CIDADE']} / {centro_decisorio['ESTADO_UF']}"]
+    "Possível Centro Decisório": [f"{centro_decisorio['CIDADE']} / {centro_decisorio['ESTADO_UF']}"],
+    "CNPJ do Centro Decisório": [centro_decisorio['CNPJ_CARGA']]
 })
 
 # 🔹 Exibir tabela no Streamlit
@@ -174,7 +175,45 @@ if not df_ultimos_12_meses.empty and "Consumo Médio Total" in df_ultimos_12_mes
     tabela_consumo_submercado = tabela_consumo_submercado.drop(columns=["Consumo (MWm 12 meses)"])
     
     # 🔹 Exibir tabela no Streamlit
-    st.write("### 📋 Percentual de Consumo por Submercado")
+    st.write("### 🌎 Percentual de Consumo por Submercado")
     st.dataframe(tabela_consumo_submercado, hide_index=True)
 else:
     st.warning("Nenhum dado disponível para calcular o consumo por submercado.")
+
+# 🔹 Obter lista única de unidades
+unidades_unicas = df_ultimos_12_meses["SIGLA_PARCELA_CARGA"].unique()
+
+# Função para formatar o CNPJ
+def format_cnpj(cnpj):
+    cnpj = str(cnpj).split('.')[0].zfill(14)
+    return re.sub(r'(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})', r'\1.\2.\3/\4-\5', cnpj)
+
+# 🔹 Criar lista para armazenar os dados das unidades
+dados_unidades = []
+
+# 🔹 Iterar sobre cada unidade única e buscar as informações correspondentes
+for unidade in unidades_unicas:
+    df_unidade = df_ultimos_12_meses[df_ultimos_12_meses["SIGLA_PARCELA_CARGA"] == unidade]
+    cnpj = format_cnpj(df_unidade["CNPJ_CARGA"].iloc[0])
+    cidade = df_unidade["CIDADE"].iloc[0]
+    estado = df_unidade["ESTADO_UF"].iloc[0]
+    submercado = df_unidade["SUBMERCADO"].iloc[0]
+    capacidade_carga = df_unidade["CAPACIDADE_CARGA"].iloc[0]
+    consumo_12m = df_unidade["Consumo Médio Total"].mean()  # Média do consumo nos últimos 12 meses
+    
+    dados_unidades.append({
+        "Unidade": unidade,
+        "CNPJ": cnpj,
+        "Cidade": cidade,
+        "Estado": estado,
+        "Submercado": submercado,
+        "Demanda": capacidade_carga,
+        "Consumo 12m (MWm)": consumo_12m
+    })
+
+# 🔹 Criar DataFrame a partir da lista de dados das unidades
+tabela_unidades = pd.DataFrame(dados_unidades)
+
+# 🔹 Exibir tabela no Streamlit
+st.write("### 🏭 Detalhamento por Unidade")
+st.dataframe(tabela_unidades, hide_index=True)
