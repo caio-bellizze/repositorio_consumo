@@ -8,21 +8,34 @@ import re
 
 # 🔹 Configuração do Streamlit
 st.title("📊 Análise de Consumo de Energia")
-st.write("Selecione uma empresa, ajuste o limite de desvios padrões e defina o intervalo de datas.")
+st.write("Selecione uma empresa ou CNPJ, ajuste o limite de desvios padrões e defina o intervalo de datas.")
 
 # 🔹 Função para carregar os dados com cache
 @st.cache_data
 def carregar_dados(arquivo, planilha):
     return pd.read_excel(arquivo, sheet_name=planilha, engine="openpyxl")
 
+# 🔹 Função para formatar CNPJ
+def formatar_cnpj(cnpj):
+    return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
+
 # 🔹 Ler os dados
 arquivo = "base_de_dados_filtrada_v3.xlsx"
 planilha = "base_de_dados"
 df = carregar_dados(arquivo, planilha)
 
-# 🔹 Criar lista de empresas únicas
+# 🔹 Criar lista de empresas e CNPJs únicos
 empresas = sorted(df["NOME_EMPRESARIAL"].unique())
-empresa_filtro = st.selectbox("Selecione uma empresa", options=empresas, index=None, placeholder="Escolha a empresa")
+cnpjs = sorted(df["CNPJ"].unique())
+cnpjs_formatados = [formatar_cnpj(cnpj) for cnpj in cnpjs]
+
+# 🔹 Adicionar seleção de empresa ou CNPJ
+opcao_filtro = st.radio("Escolha o tipo de filtro", ("Empresa", "CNPJ"))
+if opcao_filtro == "Empresa":
+    filtro = st.selectbox("Selecione uma empresa", options=empresas, index=None, placeholder="Escolha a empresa")
+else:
+    filtro = st.selectbox("Selecione um CNPJ", options=cnpjs_formatados, index=None, placeholder="Escolha o CNPJ")
+    filtro = filtro.replace(".", "").replace("/", "").replace("-", "")  # Remover formatação para comparação
 
 # 🔹 Adicionar um slider para o número de MADs
 num_mad = st.slider("Escolha o número de desvios padrões para determinar os limites", min_value=1, max_value=5, value=2)
@@ -33,16 +46,20 @@ data_inicio = st.date_input("Data Inicial", value=pd.to_datetime("2022-01-01"))
 data_fim = st.date_input("Data Final", value=pd.to_datetime("2024-12-31"))
 
 # 🔹 Criar botão para gerar o gráfico
-if st.button("Calcular") and empresa_filtro:
-    df_empresa = df[df["NOME_EMPRESARIAL"] == empresa_filtro].copy()
-    df_empresa.dropna(subset=["Data"], inplace=True)
+if st.button("Calcular") and filtro:
+    if opcao_filtro == "Empresa":
+        df_filtro = df[df["NOME_EMPRESARIAL"] == filtro].copy()
+    else:
+        df_filtro = df[df["CNPJ"] == filtro].copy()
+    
+    df_filtro.dropna(subset=["Data"], inplace=True)
     
     # 🔹 Aplicar filtro de datas
-    df_empresa = df_empresa[(df_empresa["Data"] >= pd.to_datetime(data_inicio)) & 
-                             (df_empresa["Data"] <= pd.to_datetime(data_fim))]
+    df_filtro = df_filtro[(df_filtro["Data"] >= pd.to_datetime(data_inicio)) & 
+                          (df_filtro["Data"] <= pd.to_datetime(data_fim))]
     
-    df_empresa["Ano_Mes"] = df_empresa["Data"].dt.to_period("M")
-    df_mensal = df_empresa.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
+    df_filtro["Ano_Mes"] = df_filtro["Data"].dt.to_period("M")
+    df_mensal = df_filtro.groupby("Ano_Mes")["Consumo Médio Total"].sum().reset_index()
     df_mensal["Ano_Mes"] = df_mensal["Ano_Mes"].dt.to_timestamp(how="start")
 
     # 🔹 Cálculo do Modified Z-score
@@ -55,7 +72,7 @@ if st.button("Calcular") and empresa_filtro:
 
     # 🔹 Filtragem para flexibilidade
     df_filtrado = df_mensal[(df_mensal["Consumo Médio Total"] >= limite_inferior) & 
-                             (df_mensal["Consumo Médio Total"] <= limite_superior)].copy()
+                            (df_mensal["Consumo Médio Total"] <= limite_superior)].copy()
     df_filtrado["Distancia_Media"] = np.abs(df_filtrado["Consumo Médio Total"] - mediana_consumo)
 
     # 🔹 Cálculo da flexibilidade estimada
@@ -65,9 +82,9 @@ if st.button("Calcular") and empresa_filtro:
     media_ajustada = df_filtrado["Consumo Médio Total"].mean()
 
     # Calcular o consumo total em MWh e suas variações
-    consumo_mwh_2022 = df_empresa[df_empresa["Data"].dt.year == 2022]["CONSUMO_TOTAL"].sum()
-    consumo_mwh_2023 = df_empresa[df_empresa["Data"].dt.year == 2023]["CONSUMO_TOTAL"].sum()
-    consumo_mwh_2024 = (df_empresa[df_empresa["Data"].dt.year == 2024]["CONSUMO_TOTAL"].sum())/1000000
+    consumo_mwh_2022 = df_filtro[df_filtro["Data"].dt.year == 2022]["CONSUMO_TOTAL"].sum()
+    consumo_mwh_2023 = df_filtro[df_filtro["Data"].dt.year == 2023]["CONSUMO_TOTAL"].sum()
+    consumo_mwh_2024 = (df_filtro[df_filtro["Data"].dt.year == 2024]["CONSUMO_TOTAL"].sum())/1000000
     variacao_2022_2023 = ( consumo_mwh_2023 - consumo_mwh_2022 ) / consumo_mwh_2022 * 100
     variacao_2023_2024 = ( consumo_mwh_2024 - consumo_mwh_2023 ) / consumo_mwh_2023 * 100
 
@@ -101,7 +118,7 @@ if st.button("Calcular") and empresa_filtro:
     # Ajustando os rótulos do eixo X
     ax.set_xticklabels(df_mensal["Ano_Mes"], rotation=50)
     ax.set_ylabel("Consumo Médio Total")
-    ax.set_title(f"Consumo Histórico - {empresa_filtro}")
+    ax.set_title(f"Consumo Histórico - {filtro}")
 
     # 🔹 Exibir gráfico no Streamlit
     st.pyplot(fig)
