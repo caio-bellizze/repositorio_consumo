@@ -207,8 +207,8 @@ for unidade in unidades_unicas:
         "Cidade": cidade,
         "Estado": estado,
         "Submercado": submercado,
-        "Capacidade de Carga": capacidade_carga,
-        "Consumo 12m": consumo_12m
+        "Demanda": capacidade_carga,
+        "Consumo 12m (MWm)": consumo_12m
     })
 
 # 🔹 Criar DataFrame a partir da lista de dados das unidades
