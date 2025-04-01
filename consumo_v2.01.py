@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import json
  
-limit = 10000
+limit = ""
 cnpj = ""
 cnpj_limpo = cnpj.replace(".", "").replace("/", "").replace("-", "")
 query = cnpj_limpo
