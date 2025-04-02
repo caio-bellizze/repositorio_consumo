@@ -27,4 +27,4 @@ df = pd.DataFrame(all_records)
 
 # Exibindo no Streamlit
 st.write(all_records[:5])  # Mostra os primeiros 5 registros da API
-st.write(df)
+st.write(df[:5])
