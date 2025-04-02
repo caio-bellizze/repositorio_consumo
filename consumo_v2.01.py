@@ -26,4 +26,4 @@ while True:
 df = pd.DataFrame(all_records)
 
 # Exibindo no Streamlit
-st.dataframe(df, hide_index=True)
+st.write(df)
