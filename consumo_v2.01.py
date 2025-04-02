@@ -2,28 +2,51 @@ import requests
 import pandas as pd
 import streamlit as st
 
-# URL base da API
-base_url = "https://dadosabertos.ccee.org.br/api/3/action/datastore_search"
-resource_id = "b854f7bc-94a3-423a-96b7-2d4756ec77d1"  # ID do conjunto de dados
-limit = 10000  # Número de registros por requisição (ajustável)
-offset = 0  # Inicia do primeiro registro
-all_records = []  # Lista para armazenar todos os registros
+# Configuração do Streamlit
+st.title("Consulta de Dados Abertos da CCEE")
 
-# Loop para percorrer todas as páginas de dados
-while True:
-    url = f"{base_url}?resource_id={resource_id}&limit={limit}&offset={offset}"
-    response = requests.get(url)
-    data = response.json()
-    
-    records = data.get("result", {}).get("records", [])
-    if not records:
-        break  # Sai do loop quando não houver mais registros
+# URL da API
+BASE_URL = "https://dadosabertos.ccee.org.br/api/3/action/datastore_search"
+RESOURCE_ID = "b854f7bc-94a3-423a-96b7-2d4756ec77d1"
 
-    all_records.extend(records)
-    offset += limit  # Avança para a próxima página
+# Obtendo o número total de registros
+params = {"resource_id": RESOURCE_ID, "limit": 1}
+response = requests.get(BASE_URL, params=params)
+data = response.json()
 
-# Criando DataFrame com todos os registros
-df = pd.DataFrame(all_records)
+if "result" in data and "total" in data["result"]:
+    total_records = data["result"]["total"]  # Número total de registros
+    st.write(f"Total de registros disponíveis: {total_records}")
 
-# Exibindo no Streamlit
-st.write(df)
+    # Parâmetros de extração
+    batch_size = 100
+    offset = 0
+    all_records = []
+
+    # Extraindo todos os dados
+    with st.spinner("Baixando os dados..."):
+        while offset < total_records:
+            params = {"resource_id": RESOURCE_ID, "limit": batch_size, "offset": offset}
+            response = requests.get(BASE_URL, params=params)
+            data = response.json()
+            
+            if "result" in data and "records" in data["result"]:
+                all_records.extend(data["result"]["records"])
+            else:
+                st.error("Erro ao buscar dados")
+                break
+
+            offset += batch_size
+
+    # Convertendo para DataFrame
+    df = pd.DataFrame(all_records)
+
+    # Exibir no Streamlit
+    st.write("### Dados extraídos:")
+    st.dataframe(df)
+
+    # Opção para baixar os dados
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button("Baixar CSV", csv, "dados_ccee.csv", "text/csv", key="download-csv")
+else:
+    st.error("Não foi possível obter os dados da API.")
