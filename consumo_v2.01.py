@@ -9,37 +9,36 @@ st.title("Consulta de Dados Abertos da CCEE")
 BASE_URL = "https://dadosabertos.ccee.org.br/api/3/action/datastore_search"
 RESOURCE_ID = "b854f7bc-94a3-423a-96b7-2d4756ec77d1"
 
-@st.cache_data  # Cache para evitar múltiplas chamadas desnecessárias
-def fetch_data():
-    """ Função para baixar todos os dados da API e armazenar no cache """
-    params = {"resource_id": RESOURCE_ID, "limit": 1}
-    response = requests.get(BASE_URL, params=params)
+@st.cache_data  # Cache para evitar reprocessamento sempre que a página for atualizada
+def fetch_all_data():
+    """ Baixa TODOS os registros da API em lotes """
+    limit = 10000  # Quantidade de registros por requisição
+    offset = 0
+    all_records = []
+
+    # Obtendo o número total de registros
+    response = requests.get(f"{BASE_URL}?resource_id={RESOURCE_ID}&limit=1")
     data = response.json()
 
     if "result" in data and "total" in data["result"]:
         total_records = data["result"]["total"]
         st.write(f"Total de registros disponíveis: {total_records}")
 
-        # Ajuste do batch size para otimizar sem sobrecarregar a API
-        batch_size = 5000
-        all_records = []
+        with st.spinner("Baixando os dados..."):
+            while offset < total_records:
+                url = f"{BASE_URL}?resource_id={RESOURCE_ID}&limit={limit}&offset={offset}"
+                response = requests.get(url)
+                data = response.json()
 
-        # Loop para baixar os dados
-        for offset in range(0, total_records, batch_size):
-            params = {"resource_id": RESOURCE_ID, "limit": batch_size, "offset": offset}
-            response = requests.get(BASE_URL, params=params)
-            data = response.json()
-
-            # Se a API retorna os registros corretamente
-            if "result" in data and "records" in data["result"]:
-                records = data["result"]["records"]
+                # Se houver dados, adicionamos ao total
+                records = data.get("result", {}).get("records", [])
+                if not records:
+                    break  # Se a resposta vier vazia, paramos o loop
+                
                 all_records.extend(records)
-            else:
-                st.error(f"Erro ao buscar dados na página com offset {offset}. Parando...")
-                break  # Evita loop infinito se a API falhar
+                offset += limit  # Atualiza o offset para pegar o próximo lote
 
-            # Atualiza a tela com progresso
-            st.write(f"Registros baixados: {len(all_records)} / {total_records}")
+                st.write(f"Registros baixados: {len(all_records)} / {total_records}")
 
         return pd.DataFrame(all_records)
 
@@ -49,7 +48,7 @@ def fetch_data():
 
 
 # Chama a função e exibe os dados no Streamlit
-df = fetch_data()
+df = fetch_all_data()
 
 if not df.empty:
     st.write("### Dados extraídos:")
