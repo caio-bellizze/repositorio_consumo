@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 
 # Configuração do Streamlit
-st.title("Consulta de Dados Abertos da CCEE")
+st.title("Consulta de Dados Abertos da CCEE - teste")
 
 # URL da API
 BASE_URL = "https://dadosabertos.ccee.org.br/api/3/action/datastore_search"
