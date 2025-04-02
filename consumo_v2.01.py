@@ -30,13 +30,25 @@ if "result" in data and "total" in data["result"]:
             response = requests.get(BASE_URL, params=params)
             data = response.json()
             
+            # Se não houver mais registros, interrompe o loop
             if "result" in data and "records" in data["result"]:
-                all_records.extend(data["result"]["records"])
+                records = data["result"]["records"]
+                
+                if not records:  # Se a API retornar lista vazia, paramos
+                    st.warning("Fim dos dados alcançado.")
+                    break
+                
+                all_records.extend(records)
             else:
                 st.error("Erro ao buscar dados")
                 break
 
-            offset += batch_size
+            offset += batch_size  # Avança para a próxima página
+
+            # Adicionamos um limite de segurança (caso a API retorne um total incorreto)
+            if offset > total_records + batch_size:
+                st.error("Loop interrompido para evitar execução infinita.")
+                break
 
     # Convertendo para DataFrame
     df = pd.DataFrame(all_records)
@@ -45,8 +57,7 @@ if "result" in data and "total" in data["result"]:
     st.write("### Dados extraídos:")
     st.dataframe(df)
 
-    # Opção para baixar os dados
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("Baixar CSV", csv, "dados_ccee.csv", "text/csv", key="download-csv")
+
 else:
     st.error("Não foi possível obter os dados da API.")
+
