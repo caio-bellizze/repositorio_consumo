@@ -15,7 +15,7 @@ st.title("Importação de Dados - API CCEE")
 progress_bar = st.progress(0)  # Barra de progresso
 
 # Teste inicial: baixar apenas uma pequena quantidade
-max_records = 10000  # Ajuste para testes
+max_records = 100000  # Ajuste para testes
 
 while True:
     url = f"{base_url}?resource_id={resource_id}&limit={limit}&offset={offset}"
