@@ -21,15 +21,9 @@ while True:
     all_records.extend(records)
     offset += limit  # Avança para a próxima página
 
-    print(f"Registros coletados: {len(all_records)}")
 
 # Criar DataFrame com todos os dados coletados
 df = pd.DataFrame(all_records)
 print(f"Total de registros carregados: {df.shape[0]}")
 
-
-# Criando DataFrame com todos os registros
-df = pd.DataFrame(all_records)
-
-# Exibindo no Streamlit
 st.write(df)
