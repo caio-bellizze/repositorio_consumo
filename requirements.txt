@@ -6,3 +6,4 @@ spicy
 openpyxl
 scikit-learn
 statsmodels
+requests
